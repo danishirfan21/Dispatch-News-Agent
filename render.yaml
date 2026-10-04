@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: dispatch
+    runtime: python
+    buildCommand: npm ci && npm run build && pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        sync: false
+      - key: JWT_EXPIRES_MINUTES
+        sync: false
+      - key: COOKIE_SECURE
+        sync: false
+      - key: BACKBOARD_API_KEY
+        sync: false
+      - key: BACKBOARD_BASE_URL
+        sync: false
+      - key: BACKBOARD_MODEL
+        sync: false
+      - key: BACKBOARD_LLM_PROVIDER
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: SERPAPI_BASE_URL
+        sync: false
+      - key: SERPAPI_RESULTS_PER_INTEREST
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_BASE_URL
+        sync: false
+      - key: ELEVENLABS_STT_MODEL
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: ELEVENLABS_TTS_MODEL
+        sync: false
+      - key: MONITOR_SECRET
+        sync: false
+      - key: WATCH_CHECK_INTERVAL_MINUTES
+        sync: false
+      - key: WATCH_MONITOR_BATCH_SIZE
+        sync: false
+      - key: MAILJET_API_KEY
+        sync: false
+      - key: MAILJET_SECRET_KEY
+        sync: false
+      - key: MAIL_FROM_EMAIL
+        sync: false
+      - key: MAIL_FROM_NAME
+        sync: false
+      - key: NOTIFICATION_DELIVERY_BATCH_SIZE
+        sync: false

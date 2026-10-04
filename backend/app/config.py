@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
@@ -14,6 +16,11 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8")
+
+    # "development" or "production". Drives cookie security below; never
+    # derived from the request hostname so behavior stays predictable
+    # regardless of how the service is reached.
+    app_env: str = "development"
 
     backboard_api_key: str = ""
     backboard_base_url: str = "https://app.backboard.io/api"
@@ -37,6 +44,8 @@ class Settings(BaseSettings):
     jwt_expires_minutes: int = 60 * 24 * 14
 
     # Flip to true behind HTTPS in production so the auth cookie requires it.
+    # Defaults to true automatically when APP_ENV=production (see validator
+    # below); set COOKIE_SECURE explicitly to override either way.
     cookie_secure: bool = False
 
     elevenlabs_api_key: str = ""
@@ -60,6 +69,12 @@ class Settings(BaseSettings):
     mail_from_name: str = "Dispatch"
 
     notification_delivery_batch_size: int = 10
+
+    @model_validator(mode="after")
+    def _secure_cookie_by_default_in_production(self) -> "Settings":
+        if self.app_env == "production" and "COOKIE_SECURE" not in os.environ:
+            self.cookie_secure = True
+        return self
 
 
 settings = Settings()

@@ -1,8 +1,11 @@
 import hmac
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pymongo.errors import DuplicateKeyError
 
 from . import repositories
@@ -60,6 +63,11 @@ app.add_middleware(
 @app.on_event("startup")
 async def on_startup() -> None:
     await create_indexes()
+
+
+@app.get("/api/health")
+async def health_endpoint() -> dict:
+    return {"status": "ok"}
 
 
 @app.post("/api/auth/register", response_model=UserPublic)
@@ -437,3 +445,29 @@ async def deliver_notifications_endpoint() -> NotificationDeliveryResponse:
         retry_scheduled=stats.retry_scheduled,
         failed=stats.failed,
     )
+
+
+# Built React app (repo_root/dist), produced by `npm run build`. Serving it
+# here is what lets the frontend and API share one Render origin. Only
+# mounted when the build actually exists, so running the backend alone in
+# local development (no `dist/`) is unaffected.
+FRONTEND_DIST_DIR = Path(__file__).resolve().parent.parent.parent / "dist"
+
+if FRONTEND_DIST_DIR.is_dir():
+    app.mount(
+        "/assets", StaticFiles(directory=FRONTEND_DIST_DIR / "assets"), name="frontend-assets"
+    )
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str) -> FileResponse:
+        # Never let this catch-all mask a real API 404 as the SPA shell.
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found.")
+
+        candidate = FRONTEND_DIST_DIR / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+
+        # Any other path is a client-side route (e.g. /watching/123) — hand
+        # it to the React app, which resolves it with its own router.
+        return FileResponse(FRONTEND_DIST_DIR / "index.html")
