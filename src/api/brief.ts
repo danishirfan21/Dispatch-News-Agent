@@ -24,6 +24,11 @@ export type BriefGenerateResponse = {
   stories: BriefStoryResponse[]
 }
 
+export type LatestBriefResponse = {
+  generated_at: string
+  stories: BriefStoryResponse[]
+}
+
 export class BriefGenerateError extends Error {}
 
 export async function generateBrief(
@@ -35,6 +40,7 @@ export async function generateBrief(
     response = await fetch('/api/brief/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ interest_profile: interestProfile, articles }),
     })
   } catch {
@@ -54,4 +60,10 @@ export async function generateBrief(
   } catch {
     throw new BriefGenerateError("We couldn't understand the response. Please try again.")
   }
+}
+
+export async function getLatestBrief(): Promise<LatestBriefResponse | null> {
+  const response = await fetch('/api/brief/latest', { credentials: 'include' }).catch(() => null)
+  if (!response || response.status === 404 || !response.ok) return null
+  return (await response.json()) as LatestBriefResponse
 }

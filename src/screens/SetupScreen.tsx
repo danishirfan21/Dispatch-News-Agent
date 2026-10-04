@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BriefGenerateError, generateBrief } from '../api/brief'
 import { InterestParseError, parseInterests, type InterestProfile } from '../api/interests'
 import { NewsSearchError, searchNews } from '../api/news'
+import { ProfileError, getProfile, putProfile } from '../api/profile'
 
 const PLACEHOLDER_TEXT =
   'e.g. AI frontier research, semiconductor geopolitics, macroeconomic risk. Exclude hype cycles and celebrity commentary.'
@@ -10,10 +11,22 @@ const PLACEHOLDER_TEXT =
 export function SetupScreen() {
   const [interests, setInterests] = useState('')
   const [profile, setProfile] = useState<InterestProfile | null>(null)
+  const [isLoadingSavedProfile, setIsLoadingSavedProfile] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [isBuildingBrief, setIsBuildingBrief] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    getProfile()
+      .then((saved) => {
+        if (!saved) return
+        setInterests(saved.raw_interest_text)
+        setProfile({ interests: saved.interests, excluded_topics: saved.excluded_topics })
+      })
+      .catch(() => undefined)
+      .finally(() => setIsLoadingSavedProfile(false))
+  }, [])
 
   async function handleContinue() {
     const text = interests.trim()
@@ -45,11 +58,12 @@ export function SetupScreen() {
     setIsBuildingBrief(true)
     setError(null)
     try {
+      await putProfile(interests.trim(), profile.interests, profile.excluded_topics)
       const { articles } = await searchNews(profile)
       const { stories } = await generateBrief(profile, articles)
       navigate('/brief', { state: { stories } })
     } catch (err) {
-      if (err instanceof NewsSearchError || err instanceof BriefGenerateError) {
+      if (err instanceof NewsSearchError || err instanceof BriefGenerateError || err instanceof ProfileError) {
         setError(err.message)
       } else {
         setError('Something went wrong. Please try again.')
@@ -57,6 +71,10 @@ export function SetupScreen() {
     } finally {
       setIsBuildingBrief(false)
     }
+  }
+
+  if (isLoadingSavedProfile) {
+    return <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]" />
   }
 
   return (

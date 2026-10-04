@@ -29,5 +29,15 @@ class Settings(BaseSettings):
 
     frontend_origin: str = "http://localhost:5173"
 
+    mongodb_uri: str = ""
+    mongodb_db_name: str = "dispatch"
+
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_expires_minutes: int = 60 * 24 * 14
+
+    # Flip to true behind HTTPS in production so the auth cookie requires it.
+    cookie_secure: bool = False
+
 
 settings = Settings()

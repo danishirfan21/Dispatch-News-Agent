@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useAutoHideHeader } from '../hooks/useAutoHideHeader'
 
 type NavItem = {
@@ -15,6 +16,13 @@ const NAV_ITEMS: NavItem[] = [
 export function AppHeader() {
   const { visible, headerInteractionProps } = useAutoHideHeader()
   const location = useLocation()
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header
@@ -49,6 +57,14 @@ export function AppHeader() {
             )
           })}
         </nav>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
+        >
+          Log out
+        </button>
       </div>
     </header>
   )

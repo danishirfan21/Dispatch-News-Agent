@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { BriefStoryResponse } from '../api/brief'
+import { getLatestBrief, type BriefStoryResponse } from '../api/brief'
 import type { BriefStory } from '../data/mockBrief'
 import { minutesSince } from '../utils/relativeTime'
 import { BriefScreen } from './BriefScreen'
@@ -20,15 +21,36 @@ function toBriefStory(story: BriefStoryResponse): BriefStory {
 
 /**
  * Picks between the real curated brief and the existing polished mock Brief.
- * Navigating here directly (no stories in router state) keeps showing the
- * mock Brief unchanged.
+ * A freshly generated brief arrives via router state. Otherwise, the
+ * authenticated user's latest saved brief is loaded from the backend so it
+ * survives refreshes and logout/login. Only falls back to the mock brief
+ * when the user has no saved brief yet.
  */
 export function BriefRoute() {
   const location = useLocation()
   const state = location.state as BriefLocationState
 
+  const [savedStories, setSavedStories] = useState<BriefStoryResponse[] | null>(null)
+  const [isLoading, setIsLoading] = useState(!state?.stories)
+
+  useEffect(() => {
+    if (state?.stories) return
+
+    getLatestBrief()
+      .then((latest) => setSavedStories(latest?.stories ?? null))
+      .finally(() => setIsLoading(false))
+  }, [state])
+
   if (state?.stories) {
     return <BriefScreen stories={state.stories.map(toBriefStory)} />
+  }
+
+  if (isLoading) {
+    return <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]" />
+  }
+
+  if (savedStories) {
+    return <BriefScreen stories={savedStories.map(toBriefStory)} />
   }
 
   return <BriefScreen />

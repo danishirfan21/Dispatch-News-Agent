@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 Priority = Literal["high", "medium", "low"]
 
@@ -66,4 +66,37 @@ class BriefStory(BaseModel):
 
 
 class BriefGenerateResponse(BaseModel):
+    stories: list[BriefStory]
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserPublic(BaseModel):
+    id: str
+    email: str
+
+
+class ProfilePutRequest(BaseModel):
+    raw_interest_text: str
+    interests: list[Interest]
+    excluded_topics: list[str] = Field(default_factory=list)
+
+
+class ProfileResponse(BaseModel):
+    raw_interest_text: str
+    interests: list[Interest]
+    excluded_topics: list[str] = Field(default_factory=list)
+    updated_at: str
+
+
+class BriefResponse(BaseModel):
+    generated_at: str
     stories: list[BriefStory]
