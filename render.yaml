@@ -7,6 +7,8 @@ services:
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
       - key: APP_ENV
         value: production
       - key: MONGODB_URI
