@@ -1,12 +1,40 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { InterestParseError, parseInterests, type InterestProfile } from '../api/interests'
 
 const PLACEHOLDER_TEXT =
   'e.g. AI frontier research, semiconductor geopolitics, macroeconomic risk. Exclude hype cycles and celebrity commentary.'
 
 export function SetupScreen() {
   const [interests, setInterests] = useState('')
+  const [profile, setProfile] = useState<InterestProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  async function handleContinue() {
+    const text = interests.trim()
+    if (!text) {
+      setError('Tell us a bit about what you want to follow first.')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await parseInterests(text)
+      setProfile(result)
+    } catch (err) {
+      setError(err instanceof InterestParseError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function handleEdit() {
+    setProfile(null)
+    setError(null)
+  }
 
   return (
     <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
@@ -31,7 +59,8 @@ export function SetupScreen() {
                 value={interests}
                 onChange={(event) => setInterests(event.target.value)}
                 placeholder={PLACEHOLDER_TEXT}
-                className="w-full bg-transparent font-serif text-headline-sm text-on-surface placeholder:text-outline-variant focus:outline-none resize-none leading-relaxed"
+                disabled={profile !== null}
+                className="w-full bg-transparent font-serif text-headline-sm text-on-surface placeholder:text-outline-variant focus:outline-none resize-none leading-relaxed disabled:opacity-60"
               />
               <div className="flex items-center justify-between pt-4 mt-2 border-t border-surface-container">
                 <button
@@ -48,17 +77,82 @@ export function SetupScreen() {
               </div>
             </div>
 
+            {error && (
+              <p role="alert" className="font-sans text-label-md text-secondary mb-4 max-w-[480px]">
+                {error}
+              </p>
+            )}
+
+            {profile && (
+              <div className="w-full bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container text-left mb-6">
+                <h2 className="font-serif text-headline-sm text-on-surface mb-4">
+                  What I understood
+                </h2>
+                <ul className="flex flex-wrap gap-2 mb-4">
+                  {profile.interests.map((interest) => (
+                    <li
+                      key={interest.topic}
+                      className="px-4 py-1 rounded-full bg-surface-container-low text-on-surface font-sans text-label-md"
+                    >
+                      {interest.topic}
+                    </li>
+                  ))}
+                </ul>
+                {profile.excluded_topics.length > 0 && (
+                  <div className="pt-4 border-t border-surface-container">
+                    <span className="font-sans text-label-sm text-on-surface-variant uppercase tracking-wider">
+                      Muted
+                    </span>
+                    <ul className="flex flex-wrap gap-2 mt-2">
+                      {profile.excluded_topics.map((topic) => (
+                        <li
+                          key={topic}
+                          className="px-4 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-sans text-label-md opacity-60"
+                        >
+                          {topic}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col items-center gap-4 mb-10">
-              <button
-                type="button"
-                onClick={() => navigate('/brief')}
-                className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px]"
-              >
-                <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
-                  Continue to Your Brief
-                </span>
-                <ArrowForwardIcon className="text-on-primary group-hover:translate-x-1 transition-transform" />
-              </button>
+              {profile ? (
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/brief')}
+                    className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px]"
+                  >
+                    <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
+                      Looks right &rarr; Continue
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  disabled={isLoading}
+                  className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
+                    {isLoading ? 'Thinking…' : 'Continue to Your Brief'}
+                  </span>
+                  {!isLoading && (
+                    <ArrowForwardIcon className="text-on-primary group-hover:translate-x-1 transition-transform" />
+                  )}
+                </button>
+              )}
               <p className="font-sans text-label-sm text-on-surface-variant max-w-[420px]">
                 You can change this anytime.
               </p>
