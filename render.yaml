@@ -63,3 +63,46 @@ services:
         sync: false
       - key: NOTIFICATION_DELIVERY_BATCH_SIZE
         sync: false
+
+  - type: cron
+    name: dispatch-monitor
+    runtime: python
+    plan: starter
+    schedule: "0 * * * *"
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python -m app.jobs.run_monitor_cycle
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        sync: false
+      - key: BACKBOARD_API_KEY
+        sync: false
+      - key: BACKBOARD_BASE_URL
+        sync: false
+      - key: BACKBOARD_MODEL
+        sync: false
+      - key: BACKBOARD_LLM_PROVIDER
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: SERPAPI_BASE_URL
+        sync: false
+      - key: SERPAPI_RESULTS_PER_INTEREST
+        sync: false
+      - key: WATCH_CHECK_INTERVAL_MINUTES
+        sync: false
+      - key: WATCH_MONITOR_BATCH_SIZE
+        sync: false
+      - key: MAILJET_API_KEY
+        sync: false
+      - key: MAILJET_SECRET_KEY
+        sync: false
+      - key: MAIL_FROM_EMAIL
+        sync: false
+      - key: MAIL_FROM_NAME
+        sync: false
+      - key: NOTIFICATION_DELIVERY_BATCH_SIZE
+        sync: false
