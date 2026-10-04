@@ -38,13 +38,13 @@ def _article_id(url: str) -> str:
     return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
 
 
-async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) -> list[Article]:
+async def _fetch_google_news(client: httpx.AsyncClient, query: str, topic: str, limit: int) -> list[Article]:
     # Note: SerpApi's google_news engine rejects `so` (sort) when `q` is set,
     # so recency comes from the query itself (Google News ranks recent
     # coverage highly by default) rather than an explicit sort parameter.
     params = {
         "engine": "google_news",
-        "q": _build_query(interest),
+        "q": query,
         "hl": "en",
         "api_key": settings.serpapi_api_key,
     }
@@ -52,10 +52,10 @@ async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) ->
     try:
         response = await client.get(settings.serpapi_base_url, params=params)
     except httpx.TimeoutException as exc:
-        logger.error("SerpApi request timed out for an interest: %s", type(exc).__name__)
+        logger.error("SerpApi request timed out for a query: %s", type(exc).__name__)
         raise SerpApiError("The news search took too long to respond. Please try again.") from exc
     except httpx.RequestError as exc:
-        logger.error("SerpApi request failed for an interest: %s", type(exc).__name__)
+        logger.error("SerpApi request failed for a query: %s", type(exc).__name__)
         raise SerpApiError("Couldn't reach the news search service. Please try again.") from exc
 
     if response.status_code == 429:
@@ -74,7 +74,7 @@ async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) ->
 
     results = body.get("news_results", [])
     articles: list[Article] = []
-    for result in results[: settings.serpapi_results_per_interest]:
+    for result in results[:limit]:
         url = result.get("link")
         title = result.get("title")
         if not url or not title:
@@ -83,7 +83,7 @@ async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) ->
         articles.append(
             Article(
                 id=_article_id(url),
-                topic=interest.topic,
+                topic=topic,
                 title=title,
                 source=source.get("name", "") if isinstance(source, dict) else "",
                 url=url,
@@ -93,6 +93,26 @@ async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) ->
             )
         )
     return articles
+
+
+async def _search_one_interest(client: httpx.AsyncClient, interest: Interest) -> list[Article]:
+    return await _fetch_google_news(
+        client, _build_query(interest), interest.topic, settings.serpapi_results_per_interest
+    )
+
+
+def _dedupe_articles(articles: list[Article]) -> list[Article]:
+    seen_urls: set[str] = set()
+    seen_titles: set[str] = set()
+    deduped: list[Article] = []
+    for article in articles:
+        normalized_title = _normalize_title(article.title)
+        if article.url in seen_urls or normalized_title in seen_titles:
+            continue
+        seen_urls.add(article.url)
+        seen_titles.add(normalized_title)
+        deduped.append(article)
+    return deduped
 
 
 async def search_news(interests: list[Interest]) -> list[Article]:
@@ -105,15 +125,20 @@ async def search_news(interests: list[Interest]) -> list[Article]:
         for interest in interests:
             all_articles.extend(await _search_one_interest(client, interest))
 
-    seen_urls: set[str] = set()
-    seen_titles: set[str] = set()
-    deduped: list[Article] = []
-    for article in all_articles:
-        normalized_title = _normalize_title(article.title)
-        if article.url in seen_urls or normalized_title in seen_titles:
-            continue
-        seen_urls.add(article.url)
-        seen_titles.add(normalized_title)
-        deduped.append(article)
+    return _dedupe_articles(all_articles)
 
-    return deduped
+
+async def search_news_for_query(query: str, topic: str, limit: int | None = None) -> list[Article]:
+    """Single-query Google News search used for Watch update checks, where
+    the query is derived server-side from the Watch itself (never from
+    arbitrary frontend input)."""
+    if not settings.serpapi_api_key:
+        logger.error("SerpApi search skipped: API key is not configured")
+        raise SerpApiError("The news search isn't configured on the server yet.")
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        articles = await _fetch_google_news(
+            client, query, topic, limit or settings.serpapi_results_per_interest
+        )
+
+    return _dedupe_articles(articles)

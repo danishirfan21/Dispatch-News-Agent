@@ -13,6 +13,7 @@ from .models import (
     BriefGenerateRequest,
     BriefGenerateResponse,
     BriefResponse,
+    BriefSource,
     LoginRequest,
     NewsSearchRequest,
     NewsSearchResponse,
@@ -23,7 +24,10 @@ from .models import (
     RegisterRequest,
     UserPublic,
     VoiceTranscribeResponse,
+    WatchCheckResponse,
+    WatchCheckResult,
     WatchCreateRequest,
+    WatchLatestChange,
     WatchPatchRequest,
     WatchResponse,
 )
@@ -32,7 +36,8 @@ from .services.backboard import BackboardError, parse_interests
 from .services.brief import generate_brief
 from .services.elevenlabs import ElevenLabsError, synthesize_speech_with_timestamps, transcribe_audio
 from .services.narration import build_narration, map_segment_timings
-from .services.serpapi import SerpApiError, search_news
+from .services.serpapi import SerpApiError, search_news, search_news_for_query
+from .services.watch_analysis import WatchAnalysisError, analyze_watch_update
 
 app = FastAPI(title="Dispatch API")
 
@@ -227,6 +232,17 @@ def _as_utc_isoformat(value: datetime) -> str:
     return value.isoformat()
 
 
+def _to_latest_change(value: object) -> WatchLatestChange | None:
+    if not isinstance(value, dict):
+        return None
+    detected_at = value.get("detected_at")
+    return WatchLatestChange(
+        summary=value.get("summary", ""),
+        detected_at=_as_utc_isoformat(detected_at) if isinstance(detected_at, datetime) else str(detected_at or ""),
+        sources=[BriefSource(**source) for source in value.get("sources", [])],
+    )
+
+
 def _to_watch_response(doc: dict) -> WatchResponse:
     return WatchResponse(
         id=str(doc["_id"]),
@@ -237,10 +253,14 @@ def _to_watch_response(doc: dict) -> WatchResponse:
         sources=doc["sources"],
         published_at=doc.get("published_at"),
         known_state=doc["known_state"],
+        known_state_updated_at=_as_utc_isoformat(doc["known_state_updated_at"])
+        if doc.get("known_state_updated_at")
+        else _as_utc_isoformat(doc["created_at"]),
         watch_condition=doc["watch_condition"],
         major_developments_only=doc["major_developments_only"],
         status=doc["status"],
-        latest_change=doc.get("latest_change"),
+        development_status=doc.get("development_status", "no_change"),
+        latest_change=_to_latest_change(doc.get("latest_change")),
         last_checked_at=_as_utc_isoformat(doc["last_checked_at"]) if doc.get("last_checked_at") else None,
         created_at=_as_utc_isoformat(doc["created_at"]),
         updated_at=_as_utc_isoformat(doc["updated_at"]),
@@ -307,3 +327,116 @@ async def delete_watch_endpoint(watch_id: str, user: AuthenticatedUser = Depends
     if not deleted:
         raise HTTPException(status_code=404, detail="Watch not found.")
     return {"ok": True}
+
+
+@app.post("/api/watches/{watch_id}/check", response_model=WatchCheckResponse)
+async def check_watch_endpoint(
+    watch_id: str, user: AuthenticatedUser = Depends(get_current_user)
+) -> WatchCheckResponse:
+    watch_doc = await repositories.get_watch(user.id, watch_id)
+    if not watch_doc:
+        raise HTTPException(status_code=404, detail="Watch not found.")
+
+    if watch_doc["status"] == "paused":
+        raise HTTPException(status_code=409, detail="This watch is paused. Resume it to check for updates.")
+
+    existing_urls = {source.get("url") for source in watch_doc.get("sources", []) if source.get("url")}
+
+    try:
+        articles = await search_news_for_query(watch_doc["headline"], watch_doc["topic"])
+    except SerpApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    fresh_articles = [article for article in articles if article.url not in existing_urls]
+
+    now = datetime.now(timezone.utc)
+    checked_at_iso = _as_utc_isoformat(now)
+
+    if not fresh_articles:
+        updated_doc = await repositories.update_watch(
+            user.id, watch_id, {"last_checked_at": now, "development_status": "no_change"}
+        )
+        if not updated_doc:
+            raise HTTPException(status_code=404, detail="Watch not found.")
+        return WatchCheckResponse(
+            watch=_to_watch_response(updated_doc),
+            check=WatchCheckResult(
+                material_change=False, condition_satisfied=False, change_summary=None, checked_at=checked_at_iso
+            ),
+        )
+
+    last_checked_at_iso = (
+        _as_utc_isoformat(watch_doc["last_checked_at"]) if watch_doc.get("last_checked_at") else None
+    )
+
+    try:
+        analysis = await analyze_watch_update(
+            headline=watch_doc["headline"],
+            topic=watch_doc["topic"],
+            known_state=watch_doc["known_state"],
+            watch_condition=watch_doc.get("watch_condition", ""),
+            major_developments_only=watch_doc.get("major_developments_only", True),
+            last_checked_at=last_checked_at_iso,
+            articles=fresh_articles,
+        )
+    except (BackboardError, WatchAnalysisError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    articles_by_id = {article.id: article for article in fresh_articles}
+    supporting = [
+        articles_by_id[article_id] for article_id in analysis.supporting_article_ids if article_id in articles_by_id
+    ]
+
+    # Conservative by design: only trust a claimed material change when the
+    # model actually cited supporting evidence we can verify and show.
+    if not analysis.material_change or not supporting:
+        updated_doc = await repositories.update_watch(
+            user.id, watch_id, {"last_checked_at": now, "development_status": "no_change"}
+        )
+        if not updated_doc:
+            raise HTTPException(status_code=404, detail="Watch not found.")
+        return WatchCheckResponse(
+            watch=_to_watch_response(updated_doc),
+            check=WatchCheckResult(
+                material_change=False, condition_satisfied=False, change_summary=None, checked_at=checked_at_iso
+            ),
+        )
+
+    seen_source_names: set[str] = set()
+    change_sources: list[BriefSource] = []
+    for article in supporting:
+        if article.source in seen_source_names:
+            continue
+        seen_source_names.add(article.source)
+        change_sources.append(BriefSource(name=article.source, url=article.url))
+
+    change_summary = analysis.change_summary or ""
+
+    updated_doc = await repositories.update_watch(
+        user.id,
+        watch_id,
+        {
+            "last_checked_at": now,
+            "development_status": "new_development",
+            "known_state": analysis.new_known_state,
+            "known_state_updated_at": now,
+            "latest_change": {
+                "summary": change_summary,
+                "detected_at": now,
+                "sources": [source.model_dump() for source in change_sources],
+            },
+        },
+    )
+    if not updated_doc:
+        raise HTTPException(status_code=404, detail="Watch not found.")
+
+    return WatchCheckResponse(
+        watch=_to_watch_response(updated_doc),
+        check=WatchCheckResult(
+            material_change=True,
+            condition_satisfied=analysis.condition_satisfied,
+            change_summary=change_summary,
+            checked_at=checked_at_iso,
+            sources=change_sources,
+        ),
+    )

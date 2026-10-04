@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getWatch, patchWatch, WatchError, type Watch } from '../api/watches'
+import { checkWatch, getWatch, patchWatch, WatchError, type Watch } from '../api/watches'
 import { formatRelativeTime, minutesSince } from '../utils/relativeTime'
 
 export function WatchDetailScreen() {
@@ -17,6 +17,10 @@ export function WatchDetailScreen() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showSavedToast, setShowSavedToast] = useState(false)
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const [isChecking, setIsChecking] = useState(false)
+  const [checkError, setCheckError] = useState<string | null>(null)
+  const [lastCheckOutcome, setLastCheckOutcome] = useState<'no_change' | 'new_development' | null>(null)
 
   useEffect(() => {
     if (!id) {
@@ -102,6 +106,21 @@ export function WatchDetailScreen() {
     }
   }
 
+  async function handleCheckForUpdates() {
+    if (isChecking) return
+    setIsChecking(true)
+    setCheckError(null)
+    try {
+      const result = await checkWatch(watch!.id)
+      setWatch(result.watch)
+      setLastCheckOutcome(result.watch.development_status)
+    } catch (error) {
+      setCheckError(error instanceof WatchError ? error.message : "Couldn't check for updates right now.")
+    } finally {
+      setIsChecking(false)
+    }
+  }
+
   return (
     <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
       <div className="flex flex-col w-full">
@@ -147,19 +166,55 @@ export function WatchDetailScreen() {
               <span className="font-sans text-label-sm text-secondary font-semibold uppercase tracking-wider">
                 The Latest Meaningful Change
               </span>
-              {watch.latest_change ? (
-                <p className="font-serif text-body-md text-on-surface">{watch.latest_change}</p>
+              {watch.development_status === 'new_development' && watch.latest_change ? (
+                <p className="font-serif text-body-md text-on-surface">{watch.latest_change.summary}</p>
               ) : (
                 <h2 className="font-serif text-headline-sm text-on-surface">
-                  No meaningful change yet
+                  {lastCheckOutcome === 'no_change'
+                    ? 'No meaningful change since the previous state.'
+                    : 'No meaningful change yet'}
                 </h2>
               )}
             </div>
-            <div className="bg-surface-container-low rounded-lg p-4 border-l-2 border-secondary">
-              <p className="font-sans text-body-sm text-on-surface">
-                <span className="font-semibold text-secondary">Current Status: </span>
-                {watch.latest_change ?? "We're watching, and haven't seen a meaningful development yet."}
+
+            {watch.development_status === 'new_development' && watch.latest_change && watch.latest_change.sources.length > 0 && (
+              <div className="flex flex-wrap gap-3 pt-1">
+                {watch.latest_change.sources.map((source) => (
+                  <a
+                    key={source.url}
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-sans text-label-sm text-secondary hover:underline"
+                  >
+                    {source.name}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {checkError && (
+              <p role="alert" className="font-sans text-label-sm text-secondary">
+                {checkError}
               </p>
+            )}
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleCheckForUpdates}
+                disabled={isChecking || isPaused}
+                title={isPaused ? 'Resume watching to check for updates' : undefined}
+                className="px-5 py-2 rounded-lg bg-surface-container-low text-on-surface hover:text-secondary font-sans text-label-md font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isChecking
+                  ? 'Checking…'
+                  : lastCheckOutcome === 'new_development'
+                    ? 'New development'
+                    : lastCheckOutcome === 'no_change'
+                      ? 'No meaningful change'
+                      : 'Check for updates'}
+              </button>
             </div>
           </section>
 

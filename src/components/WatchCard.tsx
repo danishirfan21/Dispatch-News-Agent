@@ -9,7 +9,7 @@ type WatchCardProps = {
 
 export function WatchCard({ watch }: WatchCardProps) {
   const navigate = useNavigate()
-  const hasNewDevelopment = Boolean(watch.latest_change)
+  const hasNewDevelopment = watch.development_status === 'new_development'
   const href = `/watching/${watch.id}`
 
   function goToDetail() {
@@ -93,7 +93,7 @@ export function WatchCard({ watch }: WatchCardProps) {
         {watch.headline}
       </h2>
       <p className="font-serif text-body-md text-on-surface-variant leading-relaxed mb-4">
-        {watch.latest_change ?? watch.summary}
+        {hasNewDevelopment && watch.latest_change ? watch.latest_change.summary : watch.summary}
       </p>
 
       <div className="flex items-center justify-end">

@@ -125,6 +125,7 @@ class BriefAudioResponse(BaseModel):
 
 
 WatchStatus = Literal["active", "paused"]
+WatchDevelopmentStatus = Literal["no_change", "new_development"]
 
 
 class WatchCreateRequest(BaseModel):
@@ -137,6 +138,12 @@ class WatchPatchRequest(BaseModel):
     status: WatchStatus | None = None
 
 
+class WatchLatestChange(BaseModel):
+    summary: str
+    detected_at: str
+    sources: list[BriefSource] = Field(default_factory=list)
+
+
 class WatchResponse(BaseModel):
     id: str
     story_id: str
@@ -146,10 +153,25 @@ class WatchResponse(BaseModel):
     sources: list[BriefSource]
     published_at: str | None = None
     known_state: str
+    known_state_updated_at: str
     watch_condition: str
     major_developments_only: bool
     status: WatchStatus
-    latest_change: str | None = None
+    development_status: WatchDevelopmentStatus
+    latest_change: WatchLatestChange | None = None
     last_checked_at: str | None = None
     created_at: str
     updated_at: str
+
+
+class WatchCheckResult(BaseModel):
+    material_change: bool
+    condition_satisfied: bool
+    change_summary: str | None = None
+    checked_at: str
+    sources: list[BriefSource] = Field(default_factory=list)
+
+
+class WatchCheckResponse(BaseModel):
+    watch: WatchResponse
+    check: WatchCheckResult
