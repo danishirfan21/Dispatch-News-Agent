@@ -1,16 +1,26 @@
 import { useState } from 'react'
+import type { BriefAudioSegment } from '../api/briefAudio'
 import type { BriefStory } from '../data/mockBrief'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { splitSentences } from '../utils/splitSentences'
 
 type NewsStoryProps = {
   story: BriefStory
+  segments?: BriefAudioSegment[]
+  activeSegment?: BriefAudioSegment | null
 }
 
-export function NewsStory({ story }: NewsStoryProps) {
+export function NewsStory({ story, segments, activeSegment }: NewsStoryProps) {
   const [isFollowing, setIsFollowing] = useState(false)
 
+  const isCurrentStory = activeSegment?.story_id === story.id
+  const headlineSegment = segments?.find((segment) => segment.type === 'headline')
+  const summarySegments = segments?.filter((segment) => segment.type === 'summary')
+  const isHeadlineActive = Boolean(headlineSegment) && activeSegment === headlineSegment
+  const summarySentences = summarySegments?.length ? splitSentences(story.summary) : null
+
   return (
-    <article className="py-10 space-y-4">
+    <article className={`py-10 space-y-4 transition-colors ${isCurrentStory ? 'bg-surface-container-lowest/60 -mx-4 px-4 rounded-xl' : ''}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="font-sans text-label-sm uppercase tracking-wider font-semibold text-secondary">
           {story.category}
@@ -20,11 +30,30 @@ export function NewsStory({ story }: NewsStoryProps) {
         </span>
       </div>
 
-      <h2 className="font-serif text-headline-md text-on-surface tracking-tight leading-snug">
+      <h2
+        className={`font-serif text-headline-md tracking-tight leading-snug transition-colors rounded px-1 -mx-1 ${
+          isHeadlineActive ? 'bg-secondary/15 text-on-surface' : 'text-on-surface'
+        }`}
+      >
         {story.headline}
       </h2>
 
-      <p className="font-serif text-body-lg text-on-surface leading-relaxed">{story.summary}</p>
+      <p className="font-serif text-body-lg text-on-surface leading-relaxed">
+        {summarySentences
+          ? summarySentences.map((sentence, index) => {
+              const isActive = Boolean(summarySegments?.[index]) && activeSegment === summarySegments?.[index]
+              return (
+                <span
+                  key={index}
+                  className={`transition-colors rounded ${isActive ? 'bg-secondary/15' : ''}`}
+                >
+                  {sentence}
+                  {index < summarySentences.length - 1 ? ' ' : ''}
+                </span>
+              )
+            })
+          : story.summary}
+      </p>
 
       <div className="bg-surface-container-low p-4 rounded-lg space-y-1">
         <span className="block font-sans text-label-sm uppercase font-semibold text-secondary tracking-wider">

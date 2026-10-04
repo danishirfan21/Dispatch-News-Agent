@@ -43,5 +43,10 @@ class Settings(BaseSettings):
     elevenlabs_base_url: str = "https://api.elevenlabs.io/v1"
     elevenlabs_stt_model: str = "scribe_v2"
 
+    # "Rachel", one of ElevenLabs' stock public voices — a reasonable default
+    # for narration until the product wants a custom voice.
+    elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"
+    elevenlabs_tts_model: str = "eleven_multilingual_v2"
+
 
 settings = Settings()

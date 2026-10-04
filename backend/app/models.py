@@ -105,3 +105,20 @@ class BriefResponse(BaseModel):
 class VoiceTranscribeResponse(BaseModel):
     text: str
     language_code: str
+
+
+SegmentType = Literal["headline", "summary"]
+
+
+class BriefAudioSegment(BaseModel):
+    story_id: str
+    type: SegmentType
+    text: str
+    start: float
+    end: float
+
+
+class BriefAudioResponse(BaseModel):
+    audio_base64: str
+    mime_type: str
+    segments: list[BriefAudioSegment]

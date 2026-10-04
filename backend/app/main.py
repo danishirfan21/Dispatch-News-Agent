@@ -7,6 +7,7 @@ from .auth import AuthenticatedUser, clear_auth_cookie, get_current_user, set_au
 from .config import settings
 from .db import create_indexes
 from .models import (
+    BriefAudioResponse,
     BriefGenerateRequest,
     BriefGenerateResponse,
     BriefResponse,
@@ -24,7 +25,8 @@ from .models import (
 from .security import create_access_token, hash_password, normalize_email, verify_password
 from .services.backboard import BackboardError, parse_interests
 from .services.brief import generate_brief
-from .services.elevenlabs import ElevenLabsError, transcribe_audio
+from .services.elevenlabs import ElevenLabsError, synthesize_speech_with_timestamps, transcribe_audio
+from .services.narration import build_narration, map_segment_timings
 from .services.serpapi import SerpApiError, search_news
 
 app = FastAPI(title="Dispatch API")
@@ -186,3 +188,29 @@ async def voice_transcribe_endpoint(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return VoiceTranscribeResponse(**result)
+
+
+@app.get("/api/brief/audio", response_model=BriefAudioResponse)
+async def brief_audio_endpoint(user: AuthenticatedUser = Depends(get_current_user)) -> BriefAudioResponse:
+    brief_doc = await repositories.get_latest_brief(user.id)
+    if not brief_doc:
+        raise HTTPException(status_code=404, detail="No saved brief yet.")
+
+    narration_text, segments_meta = build_narration(brief_doc["stories"])
+    if not narration_text.strip():
+        raise HTTPException(status_code=404, detail="Your brief doesn't have anything to narrate yet.")
+
+    try:
+        tts_result = await synthesize_speech_with_timestamps(narration_text)
+    except ElevenLabsError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    segments = map_segment_timings(
+        segments_meta,
+        narration_text,
+        tts_result["characters"],
+        tts_result["start_times"],
+        tts_result["end_times"],
+    )
+
+    return BriefAudioResponse(audio_base64=tts_result["audio_base64"], mime_type="audio/mpeg", segments=segments)
