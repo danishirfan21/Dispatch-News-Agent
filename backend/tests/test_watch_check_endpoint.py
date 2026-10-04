@@ -20,6 +20,7 @@ from starlette.testclient import TestClient  # noqa: E402
 
 from app import main  # noqa: E402
 from app.models import Article  # noqa: E402
+from app.services import watch_monitor  # noqa: E402
 from app.services.watch_analysis import WatchAnalysisResult  # noqa: E402
 
 FRESH_ARTICLE = Article(
@@ -106,8 +107,8 @@ def test_no_change_does_not_mutate_known_state(client: TestClient) -> None:
             supporting_article_ids=[],
         )
 
-    main.search_news_for_query = fake_search
-    main.analyze_watch_update = fake_analyze
+    watch_monitor.search_news_for_query = fake_search
+    watch_monitor.analyze_watch_update = fake_analyze
     resp = c.post(f"/api/watches/{watch['id']}/check")
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -136,8 +137,8 @@ def test_meaningful_change_persists_new_state_and_sources(client: TestClient) ->
             supporting_article_ids=["fresh-1"],
         )
 
-    main.search_news_for_query = fake_search
-    main.analyze_watch_update = fake_analyze
+    watch_monitor.search_news_for_query = fake_search
+    watch_monitor.analyze_watch_update = fake_analyze
     resp = c.post(f"/api/watches/{watch['id']}/check")
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -161,7 +162,7 @@ def test_meaningful_change_persists_new_state_and_sources(client: TestClient) ->
             supporting_article_ids=[],
         )
 
-    main.analyze_watch_update = fake_analyze_followup
+    watch_monitor.analyze_watch_update = fake_analyze_followup
     resp2 = c.post(f"/api/watches/{watch['id']}/check")
     assert resp2.status_code == 200, resp2.text
     body2 = resp2.json()
@@ -193,8 +194,8 @@ def test_unverified_material_change_claim_is_downgraded(client: TestClient) -> N
             supporting_article_ids=["does-not-exist"],
         )
 
-    main.search_news_for_query = fake_search
-    main.analyze_watch_update = fake_analyze
+    watch_monitor.search_news_for_query = fake_search
+    watch_monitor.analyze_watch_update = fake_analyze
     resp = c.post(f"/api/watches/{watch['id']}/check")
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -217,8 +218,8 @@ def test_zero_fresh_articles_short_circuits_without_model_call(client: TestClien
         called["value"] = True
         raise AssertionError("analyze_watch_update should not be called with zero fresh articles")
 
-    main.search_news_for_query = fake_search
-    main.analyze_watch_update = fake_analyze
+    watch_monitor.search_news_for_query = fake_search
+    watch_monitor.analyze_watch_update = fake_analyze
     resp = c.post(f"/api/watches/{watch['id']}/check")
     assert resp.status_code == 200, resp.text
     body = resp.json()

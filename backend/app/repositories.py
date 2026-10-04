@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
+from pymongo.errors import DuplicateKeyError
 
+from .config import settings
 from .db import get_db
 from .models import BriefStory, ProfilePutRequest
 
@@ -97,6 +99,8 @@ async def create_watch(user_id: str, story: dict) -> dict:
         "development_status": "no_change",
         "latest_change": None,
         "last_checked_at": None,
+        "next_check_at": now + timedelta(minutes=settings.watch_check_interval_minutes),
+        "condition_satisfied_at": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -144,3 +148,76 @@ async def delete_watch(user_id: str, watch_id: str) -> bool:
         return False
     result = await get_db().watches.delete_one({"_id": object_id, "user_id": user_id})
     return result.deleted_count > 0
+
+
+async def find_due_watches(now: datetime, limit: int) -> list[dict]:
+    cursor = (
+        get_db()
+        .watches.find({"status": "active", "next_check_at": {"$lte": now}})
+        .limit(limit)
+    )
+    return await cursor.to_list(length=limit)
+
+
+async def create_development(
+    *,
+    user_id: str,
+    watch_id: str,
+    summary: str,
+    known_state_before: str,
+    known_state_after: str,
+    condition_satisfied: bool,
+    sources: list[dict],
+    detected_at: datetime,
+    trigger: str,
+    notification_decision: str,
+    notification_reason: str,
+) -> dict:
+    doc = {
+        "user_id": user_id,
+        "watch_id": watch_id,
+        "summary": summary,
+        "known_state_before": known_state_before,
+        "known_state_after": known_state_after,
+        "condition_satisfied": condition_satisfied,
+        "sources": sources,
+        "detected_at": detected_at,
+        "trigger": trigger,
+        "notification_decision": notification_decision,
+        "notification_reason": notification_reason,
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await get_db().watch_developments.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return doc
+
+
+async def list_developments(user_id: str, watch_id: str) -> list[dict]:
+    cursor = get_db().watch_developments.find(
+        {"user_id": user_id, "watch_id": watch_id}
+    ).sort("detected_at", -1)
+    return await cursor.to_list(length=None)
+
+
+async def list_recent_development_summaries(watch_id: str, limit: int = 5) -> list[str]:
+    cursor = (
+        get_db()
+        .watch_developments.find({"watch_id": watch_id}, {"summary": 1})
+        .sort("detected_at", -1)
+        .limit(limit)
+    )
+    docs = await cursor.to_list(length=limit)
+    return [doc["summary"] for doc in docs if doc.get("summary")]
+
+
+async def create_notification(doc: dict) -> dict | None:
+    """Insert a pending notification; returns None if one already exists for
+    this (development_id, type) pair — the unique index makes this idempotent
+    so a retried or re-run check can never create a duplicate.
+    """
+    try:
+        result = await get_db().notifications.insert_one(doc)
+    except DuplicateKeyError:
+        return None
+    doc["_id"] = result.inserted_id
+    return doc

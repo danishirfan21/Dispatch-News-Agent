@@ -48,5 +48,11 @@ class Settings(BaseSettings):
     elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"
     elevenlabs_tts_model: str = "eleven_multilingual_v2"
 
+    # Backend-only secret for the internal automatic-monitor endpoint. Never
+    # reused from jwt_secret and never accepted via a user cookie.
+    monitor_secret: str = ""
+    watch_check_interval_minutes: int = 60
+    watch_monitor_batch_size: int = 10
+
 
 settings = Settings()

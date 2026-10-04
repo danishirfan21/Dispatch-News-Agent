@@ -26,4 +26,8 @@ async def create_indexes() -> None:
     await db.profiles.create_index("user_id", unique=True)
     await db.briefs.create_index([("user_id", 1), ("generated_at", -1)])
     await db.watches.create_index([("user_id", 1), ("story_id", 1)], unique=True)
+    await db.watches.create_index([("status", 1), ("next_check_at", 1)])
+    await db.watch_developments.create_index([("watch_id", 1), ("detected_at", -1)])
+    await db.watch_developments.create_index([("user_id", 1), ("detected_at", -1)])
+    await db.notifications.create_index([("development_id", 1), ("type", 1)], unique=True)
     logger.info("Database indexes ensured")

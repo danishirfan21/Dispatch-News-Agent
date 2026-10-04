@@ -19,13 +19,16 @@ You will receive JSON with:
 to be told about (may be empty)
 - "major_developments_only": whether the user wants to be notified only for major developments
 - "last_checked_at": when this watch was last checked, or null if this is the first check
+- "recent_developments": short summaries of developments already recorded for this watch, most \
+recent first (may be empty)
 - "articles": freshly retrieved news articles, each with "id", "title", "source", "url", \
 "published_at", and sometimes "snippet"
 
 Your job:
 1. Decide whether the articles contain a genuinely new, material factual development compared to \
 known_state — not merely another outlet repeating the same facts, a reworded headline, \
-speculation, or commentary.
+speculation, or commentary. A fact already represented in known_state OR in recent_developments is \
+NOT a new material change merely because another publication reports it again.
 2. If major_developments_only is true, apply a SIGNIFICANTLY higher bar: only count things like \
 an official decision, a confirmed outcome, a signed agreement, a major escalation/de-escalation, \
 a court ruling, a leadership change, a release/launch, or a comparably major policy change. Do \
@@ -87,6 +90,7 @@ async def analyze_watch_update(
     major_developments_only: bool,
     last_checked_at: str | None,
     articles: list[Article],
+    recent_developments: list[str] | None = None,
 ) -> WatchAnalysisResult:
     payload = {
         "headline": headline,
@@ -95,6 +99,7 @@ async def analyze_watch_update(
         "watch_condition": watch_condition,
         "major_developments_only": major_developments_only,
         "last_checked_at": last_checked_at,
+        "recent_developments": recent_developments or [],
         "articles": [article.model_dump() for article in articles],
     }
 

@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+import hmac
+from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo.errors import DuplicateKeyError
 
@@ -15,6 +16,7 @@ from .models import (
     BriefResponse,
     BriefSource,
     LoginRequest,
+    MonitorRunResponse,
     NewsSearchRequest,
     NewsSearchResponse,
     ParseInterestsRequest,
@@ -27,6 +29,8 @@ from .models import (
     WatchCheckResponse,
     WatchCheckResult,
     WatchCreateRequest,
+    WatchDevelopmentResponse,
+    WatchDevelopmentsResponse,
     WatchLatestChange,
     WatchPatchRequest,
     WatchResponse,
@@ -36,8 +40,9 @@ from .services.backboard import BackboardError, parse_interests
 from .services.brief import generate_brief
 from .services.elevenlabs import ElevenLabsError, synthesize_speech_with_timestamps, transcribe_audio
 from .services.narration import build_narration, map_segment_timings
-from .services.serpapi import SerpApiError, search_news, search_news_for_query
-from .services.watch_analysis import WatchAnalysisError, analyze_watch_update
+from .services.serpapi import SerpApiError, search_news
+from .services.watch_analysis import WatchAnalysisError
+from .services.watch_monitor import check_watch_for_updates, run_due_watch_checks
 
 app = FastAPI(title="Dispatch API")
 
@@ -314,6 +319,21 @@ async def patch_watch_endpoint(
     if not updates:
         watch_doc = await repositories.get_watch(user.id, watch_id)
     else:
+        current_doc = await repositories.get_watch(user.id, watch_id)
+        if not current_doc:
+            raise HTTPException(status_code=404, detail="Watch not found.")
+
+        if "watch_condition" in updates and updates["watch_condition"] != current_doc.get("watch_condition", ""):
+            updates["condition_satisfied_at"] = None
+
+        if (
+            updates.get("status") == "active"
+            and current_doc.get("status") == "paused"
+        ):
+            updates["next_check_at"] = datetime.now(timezone.utc) + timedelta(
+                minutes=settings.watch_check_interval_minutes
+            )
+
         watch_doc = await repositories.update_watch(user.id, watch_id, updates)
 
     if not watch_doc:
@@ -340,103 +360,63 @@ async def check_watch_endpoint(
     if watch_doc["status"] == "paused":
         raise HTTPException(status_code=409, detail="This watch is paused. Resume it to check for updates.")
 
-    existing_urls = {source.get("url") for source in watch_doc.get("sources", []) if source.get("url")}
-
     try:
-        articles = await search_news_for_query(watch_doc["headline"], watch_doc["topic"])
+        outcome = await check_watch_for_updates(watch_doc, trigger="manual")
     except SerpApiError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    fresh_articles = [article for article in articles if article.url not in existing_urls]
-
-    now = datetime.now(timezone.utc)
-    checked_at_iso = _as_utc_isoformat(now)
-
-    if not fresh_articles:
-        updated_doc = await repositories.update_watch(
-            user.id, watch_id, {"last_checked_at": now, "development_status": "no_change"}
-        )
-        if not updated_doc:
-            raise HTTPException(status_code=404, detail="Watch not found.")
-        return WatchCheckResponse(
-            watch=_to_watch_response(updated_doc),
-            check=WatchCheckResult(
-                material_change=False, condition_satisfied=False, change_summary=None, checked_at=checked_at_iso
-            ),
-        )
-
-    last_checked_at_iso = (
-        _as_utc_isoformat(watch_doc["last_checked_at"]) if watch_doc.get("last_checked_at") else None
-    )
-
-    try:
-        analysis = await analyze_watch_update(
-            headline=watch_doc["headline"],
-            topic=watch_doc["topic"],
-            known_state=watch_doc["known_state"],
-            watch_condition=watch_doc.get("watch_condition", ""),
-            major_developments_only=watch_doc.get("major_developments_only", True),
-            last_checked_at=last_checked_at_iso,
-            articles=fresh_articles,
-        )
     except (BackboardError, WatchAnalysisError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    articles_by_id = {article.id: article for article in fresh_articles}
-    supporting = [
-        articles_by_id[article_id] for article_id in analysis.supporting_article_ids if article_id in articles_by_id
-    ]
-
-    # Conservative by design: only trust a claimed material change when the
-    # model actually cited supporting evidence we can verify and show.
-    if not analysis.material_change or not supporting:
-        updated_doc = await repositories.update_watch(
-            user.id, watch_id, {"last_checked_at": now, "development_status": "no_change"}
-        )
-        if not updated_doc:
-            raise HTTPException(status_code=404, detail="Watch not found.")
-        return WatchCheckResponse(
-            watch=_to_watch_response(updated_doc),
-            check=WatchCheckResult(
-                material_change=False, condition_satisfied=False, change_summary=None, checked_at=checked_at_iso
-            ),
-        )
-
-    seen_source_names: set[str] = set()
-    change_sources: list[BriefSource] = []
-    for article in supporting:
-        if article.source in seen_source_names:
-            continue
-        seen_source_names.add(article.source)
-        change_sources.append(BriefSource(name=article.source, url=article.url))
-
-    change_summary = analysis.change_summary or ""
-
-    updated_doc = await repositories.update_watch(
-        user.id,
-        watch_id,
-        {
-            "last_checked_at": now,
-            "development_status": "new_development",
-            "known_state": analysis.new_known_state,
-            "known_state_updated_at": now,
-            "latest_change": {
-                "summary": change_summary,
-                "detected_at": now,
-                "sources": [source.model_dump() for source in change_sources],
-            },
-        },
+    return WatchCheckResponse(
+        watch=_to_watch_response(outcome.watch_doc),
+        check=WatchCheckResult(
+            material_change=outcome.material_change,
+            condition_satisfied=outcome.condition_satisfied,
+            change_summary=outcome.change_summary,
+            checked_at=_as_utc_isoformat(outcome.checked_at),
+            sources=outcome.sources,
+        ),
     )
-    if not updated_doc:
+
+
+def _to_development_response(doc: dict) -> WatchDevelopmentResponse:
+    return WatchDevelopmentResponse(
+        id=str(doc["_id"]),
+        summary=doc["summary"],
+        known_state_before=doc["known_state_before"],
+        known_state_after=doc["known_state_after"],
+        condition_satisfied=doc["condition_satisfied"],
+        sources=[BriefSource(**source) for source in doc.get("sources", [])],
+        detected_at=_as_utc_isoformat(doc["detected_at"]),
+        trigger=doc["trigger"],
+    )
+
+
+@app.get("/api/watches/{watch_id}/developments", response_model=WatchDevelopmentsResponse)
+async def list_watch_developments_endpoint(
+    watch_id: str, user: AuthenticatedUser = Depends(get_current_user)
+) -> WatchDevelopmentsResponse:
+    watch_doc = await repositories.get_watch(user.id, watch_id)
+    if not watch_doc:
         raise HTTPException(status_code=404, detail="Watch not found.")
 
-    return WatchCheckResponse(
-        watch=_to_watch_response(updated_doc),
-        check=WatchCheckResult(
-            material_change=True,
-            condition_satisfied=analysis.condition_satisfied,
-            change_summary=change_summary,
-            checked_at=checked_at_iso,
-            sources=change_sources,
-        ),
+    development_docs = await repositories.list_developments(user.id, watch_id)
+    return WatchDevelopmentsResponse(developments=[_to_development_response(doc) for doc in development_docs])
+
+
+async def verify_monitor_secret(authorization: str | None = Header(default=None)) -> None:
+    expected = settings.monitor_secret
+    provided = (authorization or "").removeprefix("Bearer ").strip()
+    if not expected or not provided or not hmac.compare_digest(provided, expected):
+        raise HTTPException(status_code=401, detail="Unauthorized.")
+
+
+@app.post("/api/internal/monitor/run", response_model=MonitorRunResponse, dependencies=[Depends(verify_monitor_secret)])
+async def run_monitor_endpoint() -> MonitorRunResponse:
+    stats = await run_due_watch_checks()
+    return MonitorRunResponse(
+        checked=stats.checked,
+        new_developments=stats.new_developments,
+        notifications_created=stats.notifications_created,
+        failed=stats.failed,
     )

@@ -45,6 +45,17 @@ export type WatchCheckResponse = {
   check: WatchCheckResult
 }
 
+export type WatchDevelopment = {
+  id: string
+  summary: string
+  known_state_before: string
+  known_state_after: string
+  condition_satisfied: boolean
+  sources: WatchSource[]
+  detected_at: string
+  trigger: 'manual' | 'automatic'
+}
+
 export class WatchError extends Error {}
 
 export async function createWatch(storyId: string): Promise<Watch> {
@@ -150,6 +161,22 @@ export async function checkWatch(watchId: string): Promise<WatchCheckResponse> {
   }
 
   return (await response.json()) as WatchCheckResponse
+}
+
+export async function getWatchDevelopments(watchId: string): Promise<WatchDevelopment[]> {
+  let response: Response
+  try {
+    response = await fetch(`/api/watches/${watchId}/developments`, { credentials: 'include' })
+  } catch {
+    throw new WatchError("Couldn't reach the server. Check your connection and try again.")
+  }
+
+  if (!response.ok) {
+    throw new WatchError("Couldn't load this story's timeline. Please try again.")
+  }
+
+  const body = (await response.json()) as { developments: WatchDevelopment[] }
+  return body.developments
 }
 
 export async function deleteWatch(watchId: string): Promise<void> {

@@ -175,3 +175,29 @@ class WatchCheckResult(BaseModel):
 class WatchCheckResponse(BaseModel):
     watch: WatchResponse
     check: WatchCheckResult
+
+
+CheckTrigger = Literal["manual", "automatic"]
+NotificationDecision = Literal["none", "notify"]
+
+
+class WatchDevelopmentResponse(BaseModel):
+    id: str
+    summary: str
+    known_state_before: str
+    known_state_after: str
+    condition_satisfied: bool
+    sources: list[BriefSource] = Field(default_factory=list)
+    detected_at: str
+    trigger: CheckTrigger
+
+
+class WatchDevelopmentsResponse(BaseModel):
+    developments: list[WatchDevelopmentResponse]
+
+
+class MonitorRunResponse(BaseModel):
+    checked: int
+    new_developments: int
+    notifications_created: int
+    failed: int

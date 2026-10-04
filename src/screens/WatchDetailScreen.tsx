@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { checkWatch, getWatch, patchWatch, WatchError, type Watch } from '../api/watches'
+import {
+  checkWatch,
+  getWatch,
+  getWatchDevelopments,
+  patchWatch,
+  WatchError,
+  type Watch,
+  type WatchDevelopment,
+} from '../api/watches'
 import { formatRelativeTime, minutesSince } from '../utils/relativeTime'
 
 export function WatchDetailScreen() {
@@ -22,6 +30,8 @@ export function WatchDetailScreen() {
   const [checkError, setCheckError] = useState<string | null>(null)
   const [lastCheckOutcome, setLastCheckOutcome] = useState<'no_change' | 'new_development' | null>(null)
 
+  const [developments, setDevelopments] = useState<WatchDevelopment[]>([])
+
   useEffect(() => {
     if (!id) {
       setIsLoading(false)
@@ -38,6 +48,12 @@ export function WatchDetailScreen() {
       })
       .catch((error) => setLoadError(error instanceof WatchError ? error.message : "Couldn't load that watch."))
       .finally(() => setIsLoading(false))
+
+    getWatchDevelopments(id)
+      .then(setDevelopments)
+      .catch(() => {
+        // The timeline is supplementary; a failure here shouldn't block the page.
+      })
   }, [id])
 
   useEffect(() => {
@@ -114,6 +130,13 @@ export function WatchDetailScreen() {
       const result = await checkWatch(watch!.id)
       setWatch(result.watch)
       setLastCheckOutcome(result.watch.development_status)
+      if (result.check.material_change) {
+        getWatchDevelopments(watch!.id)
+          .then(setDevelopments)
+          .catch(() => {
+            // The timeline is supplementary; a failure here shouldn't block the page.
+          })
+      }
     } catch (error) {
       setCheckError(error instanceof WatchError ? error.message : "Couldn't check for updates right now.")
     } finally {
@@ -234,6 +257,46 @@ export function WatchDetailScreen() {
               </p>
             </div>
           </section>
+
+          {developments.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="font-sans text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">
+                Story Timeline
+              </h2>
+              <ol className="space-y-4 border-l border-surface-container pl-5">
+                {developments.map((development) => (
+                  <li key={development.id} className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-sans text-label-sm text-on-surface-variant">
+                        {formatRelativeTime(minutesSince(development.detected_at))}
+                      </span>
+                      {development.condition_satisfied && (
+                        <span className="font-sans text-label-sm text-secondary font-semibold">
+                          Your condition was met
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-serif text-body-md text-on-surface">{development.summary}</p>
+                    {development.sources.length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {development.sources.map((source) => (
+                          <a
+                            key={source.url}
+                            href={source.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-sans text-label-sm text-secondary hover:underline"
+                          >
+                            {source.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
           <section className="bg-surface-container-lowest rounded-xl p-6 shadow-sm space-y-6">
             <div className="space-y-1">
