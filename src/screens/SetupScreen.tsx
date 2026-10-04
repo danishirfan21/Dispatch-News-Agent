@@ -4,6 +4,7 @@ import { BriefGenerateError, generateBrief } from '../api/brief'
 import { InterestParseError, parseInterests, type InterestProfile } from '../api/interests'
 import { NewsSearchError, searchNews } from '../api/news'
 import { ProfileError, getProfile, putProfile } from '../api/profile'
+import { useVoiceDictation } from '../hooks/useVoiceDictation'
 
 const PLACEHOLDER_TEXT =
   'e.g. AI frontier research, semiconductor geopolitics, macroeconomic risk. Exclude hype cycles and celebrity commentary.'
@@ -16,6 +17,17 @@ export function SetupScreen() {
   const [isBuildingBrief, setIsBuildingBrief] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  const {
+    state: dictationState,
+    error: dictationError,
+    toggle: toggleDictation,
+  } = useVoiceDictation((transcript) => {
+    setInterests((current) => {
+      const trimmed = current.trim()
+      return trimmed ? `${trimmed} ${transcript}` : transcript
+    })
+  })
 
   useEffect(() => {
     getProfile()
@@ -106,21 +118,29 @@ export function SetupScreen() {
               <div className="flex items-center justify-between pt-4 mt-2 border-t border-surface-container">
                 <button
                   type="button"
-                  disabled
-                  title="Voice dictation coming soon"
-                  className="group flex items-center gap-1 px-4 py-1 rounded-lg bg-surface-container-low text-on-surface opacity-50 cursor-not-allowed"
+                  onClick={toggleDictation}
+                  disabled={dictationState === 'transcribing' || profile !== null}
+                  className={`group flex items-center gap-1 px-4 py-1 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    dictationState === 'recording'
+                      ? 'bg-secondary text-on-primary'
+                      : 'bg-surface-container-low text-on-surface'
+                  }`}
                 >
-                  <MicIcon className="text-secondary" />
-                  <span className="font-sans text-label-md text-on-surface">
-                    Dictate interests
+                  <MicIcon className={dictationState === 'recording' ? 'text-on-primary' : 'text-secondary'} />
+                  <span className="font-sans text-label-md">
+                    {dictationState === 'recording'
+                      ? 'Listening… Stop'
+                      : dictationState === 'transcribing'
+                        ? 'Transcribing…'
+                        : 'Dictate interests'}
                   </span>
                 </button>
               </div>
             </div>
 
-            {error && (
+            {(error || dictationError) && (
               <p role="alert" className="font-sans text-label-md text-secondary mb-4 max-w-[480px]">
-                {error}
+                {error || dictationError}
               </p>
             )}
 

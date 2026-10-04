@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo.errors import DuplicateKeyError
 
@@ -19,10 +19,12 @@ from .models import (
     ProfileResponse,
     RegisterRequest,
     UserPublic,
+    VoiceTranscribeResponse,
 )
 from .security import create_access_token, hash_password, normalize_email, verify_password
 from .services.backboard import BackboardError, parse_interests
 from .services.brief import generate_brief
+from .services.elevenlabs import ElevenLabsError, transcribe_audio
 from .services.serpapi import SerpApiError, search_news
 
 app = FastAPI(title="Dispatch API")
@@ -170,3 +172,17 @@ async def brief_latest_endpoint(user: AuthenticatedUser = Depends(get_current_us
         generated_at=brief_doc["generated_at"].isoformat(),
         stories=brief_doc["stories"],
     )
+
+
+@app.post("/api/voice/transcribe", response_model=VoiceTranscribeResponse)
+async def voice_transcribe_endpoint(
+    file: UploadFile = File(...), user: AuthenticatedUser = Depends(get_current_user)
+) -> VoiceTranscribeResponse:
+    audio_bytes = await file.read()
+
+    try:
+        result = await transcribe_audio(audio_bytes, file.content_type or "")
+    except ElevenLabsError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return VoiceTranscribeResponse(**result)

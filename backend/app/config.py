@@ -39,5 +39,9 @@ class Settings(BaseSettings):
     # Flip to true behind HTTPS in production so the auth cookie requires it.
     cookie_secure: bool = False
 
+    elevenlabs_api_key: str = ""
+    elevenlabs_base_url: str = "https://api.elevenlabs.io/v1"
+    elevenlabs_stt_model: str = "scribe_v2"
+
 
 settings = Settings()

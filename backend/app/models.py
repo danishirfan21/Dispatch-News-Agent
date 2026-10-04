@@ -100,3 +100,8 @@ class ProfileResponse(BaseModel):
 class BriefResponse(BaseModel):
     generated_at: str
     stories: list[BriefStory]
+
+
+class VoiceTranscribeResponse(BaseModel):
+    text: str
+    language_code: str
