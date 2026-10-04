@@ -67,7 +67,7 @@ services:
   - type: cron
     name: dispatch-monitor
     runtime: python
-    plan: starter
+    plan: 0.5c-512mb
     schedule: "0 * * * *"
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && python -m app.jobs.run_monitor_cycle
