@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { InterestParseError, parseInterests, type InterestProfile } from '../api/interests'
+import { NewsSearchError, searchNews } from '../api/news'
 
 const PLACEHOLDER_TEXT =
   'e.g. AI frontier research, semiconductor geopolitics, macroeconomic risk. Exclude hype cycles and celebrity commentary.'
@@ -9,6 +10,7 @@ export function SetupScreen() {
   const [interests, setInterests] = useState('')
   const [profile, setProfile] = useState<InterestProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingNews, setIsFetchingNews] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -34,6 +36,21 @@ export function SetupScreen() {
   function handleEdit() {
     setProfile(null)
     setError(null)
+  }
+
+  async function handleConfirm() {
+    if (!profile) return
+
+    setIsFetchingNews(true)
+    setError(null)
+    try {
+      const { articles } = await searchNews(profile)
+      navigate('/brief', { state: { articles } })
+    } catch (err) {
+      setError(err instanceof NewsSearchError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsFetchingNews(false)
+    }
   }
 
   return (
@@ -124,17 +141,19 @@ export function SetupScreen() {
                   <button
                     type="button"
                     onClick={handleEdit}
-                    className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors"
+                    disabled={isFetchingNews}
+                    className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     Edit
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate('/brief')}
-                    className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px]"
+                    onClick={handleConfirm}
+                    disabled={isFetchingNews}
+                    className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
-                      Looks right &rarr; Continue
+                      {isFetchingNews ? 'Finding news…' : 'Looks right → Continue'}
                     </span>
                   </button>
                 </div>

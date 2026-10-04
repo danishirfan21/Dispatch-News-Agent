@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # points at the latest model in the Kimi family, served via openrouter.
     backboard_model: str = "~moonshotai/kimi-latest"
     backboard_llm_provider: str = "openrouter"
+
+    serpapi_api_key: str = ""
+    serpapi_base_url: str = "https://serpapi.com/search"
+    # Kept small deliberately: SerpApi's free plan has a limited monthly quota.
+    serpapi_results_per_interest: int = 4
+
     frontend_origin: str = "http://localhost:5173"
 
 
