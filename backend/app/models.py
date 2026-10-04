@@ -201,3 +201,10 @@ class MonitorRunResponse(BaseModel):
     new_developments: int
     notifications_created: int
     failed: int
+
+
+class NotificationDeliveryResponse(BaseModel):
+    processed: int
+    sent: int
+    retry_scheduled: int
+    failed: int

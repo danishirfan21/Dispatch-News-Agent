@@ -54,5 +54,12 @@ class Settings(BaseSettings):
     watch_check_interval_minutes: int = 60
     watch_monitor_batch_size: int = 10
 
+    mailjet_api_key: str = ""
+    mailjet_secret_key: str = ""
+    mail_from_email: str = ""
+    mail_from_name: str = "Dispatch"
+
+    notification_delivery_batch_size: int = 10
+
 
 settings = Settings()

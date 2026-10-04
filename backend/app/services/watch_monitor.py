@@ -95,6 +95,7 @@ def _build_notification_content(watch_doc: dict, development_doc: dict) -> dict:
     if development_doc.get("condition_satisfied") and (watch_doc.get("watch_condition") or "").strip():
         body = f"{body} Your watch condition has been met."
 
+    now = datetime.now(timezone.utc)
     return {
         "user_id": watch_doc["user_id"],
         "watch_id": str(watch_doc["_id"]),
@@ -103,8 +104,15 @@ def _build_notification_content(watch_doc: dict, development_doc: dict) -> dict:
         "title": title,
         "body": body,
         "sources": development_doc["sources"],
+        # Delivery outbox state. deliver_pending_notifications() in
+        # notification_delivery.py is the only thing that transitions these
+        # — this module only ever creates the record as immediately eligible.
         "status": "pending",
-        "created_at": datetime.now(timezone.utc),
+        "attempt_count": 0,
+        "last_attempt_at": None,
+        "next_attempt_at": now,
+        "last_error_code": None,
+        "created_at": now,
         "sent_at": None,
         "failed_at": None,
     }

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
+from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from .config import settings
@@ -11,6 +12,13 @@ from .models import BriefStory, ProfilePutRequest
 
 async def find_user_by_email(email: str) -> dict | None:
     return await get_db().users.find_one({"email": email})
+
+
+async def find_user_by_id(user_id: str) -> dict | None:
+    object_id = _to_object_id(user_id)
+    if not object_id:
+        return None
+    return await get_db().users.find_one({"_id": object_id})
 
 
 async def create_user(email: str, password_hash: str) -> dict:
@@ -221,3 +229,69 @@ async def create_notification(doc: dict) -> dict | None:
         return None
     doc["_id"] = result.inserted_id
     return doc
+
+
+async def get_watch_by_id(watch_id: str) -> dict | None:
+    """Internal, trusted lookup with no user_id filter — only ever called by
+    the notification-delivery worker with a watch_id taken from our own
+    outbox record, never from user-supplied input."""
+    object_id = _to_object_id(watch_id)
+    if not object_id:
+        return None
+    return await get_db().watches.find_one({"_id": object_id})
+
+
+async def get_development_by_id(development_id: str) -> dict | None:
+    object_id = _to_object_id(development_id)
+    if not object_id:
+        return None
+    return await get_db().watch_developments.find_one({"_id": object_id})
+
+
+async def claim_pending_notification(now: datetime) -> dict | None:
+    """Atomically claim one due pending notification (pending -> processing)
+    so two concurrent delivery workers can never send the same notification
+    twice."""
+    return await get_db().notifications.find_one_and_update(
+        {"status": "pending", "next_attempt_at": {"$lte": now}},
+        {"$set": {"status": "processing", "last_attempt_at": now}},
+        sort=[("next_attempt_at", 1)],
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+async def mark_notification_sent(notification_id: str, *, provider_message_id: str | None) -> None:
+    update: dict = {"status": "sent", "sent_at": datetime.now(timezone.utc)}
+    if provider_message_id:
+        update["provider_message_id"] = provider_message_id
+    await get_db().notifications.update_one({"_id": ObjectId(notification_id)}, {"$set": update})
+
+
+async def schedule_notification_retry(
+    notification_id: str, *, attempt_count: int, next_attempt_at: datetime, last_error_code: str
+) -> None:
+    await get_db().notifications.update_one(
+        {"_id": ObjectId(notification_id)},
+        {
+            "$set": {
+                "status": "pending",
+                "attempt_count": attempt_count,
+                "next_attempt_at": next_attempt_at,
+                "last_error_code": last_error_code,
+            }
+        },
+    )
+
+
+async def mark_notification_failed(notification_id: str, *, attempt_count: int, last_error_code: str) -> None:
+    await get_db().notifications.update_one(
+        {"_id": ObjectId(notification_id)},
+        {
+            "$set": {
+                "status": "failed",
+                "failed_at": datetime.now(timezone.utc),
+                "attempt_count": attempt_count,
+                "last_error_code": last_error_code,
+            }
+        },
+    )

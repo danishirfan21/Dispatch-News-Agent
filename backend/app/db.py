@@ -30,4 +30,5 @@ async def create_indexes() -> None:
     await db.watch_developments.create_index([("watch_id", 1), ("detected_at", -1)])
     await db.watch_developments.create_index([("user_id", 1), ("detected_at", -1)])
     await db.notifications.create_index([("development_id", 1), ("type", 1)], unique=True)
+    await db.notifications.create_index([("status", 1), ("next_attempt_at", 1)])
     logger.info("Database indexes ensured")

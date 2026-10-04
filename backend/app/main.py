@@ -19,6 +19,7 @@ from .models import (
     MonitorRunResponse,
     NewsSearchRequest,
     NewsSearchResponse,
+    NotificationDeliveryResponse,
     ParseInterestsRequest,
     ParseInterestsResponse,
     ProfilePutRequest,
@@ -40,6 +41,7 @@ from .services.backboard import BackboardError, parse_interests
 from .services.brief import generate_brief
 from .services.elevenlabs import ElevenLabsError, synthesize_speech_with_timestamps, transcribe_audio
 from .services.narration import build_narration, map_segment_timings
+from .services.notification_delivery import deliver_pending_notifications
 from .services.serpapi import SerpApiError, search_news
 from .services.watch_analysis import WatchAnalysisError
 from .services.watch_monitor import check_watch_for_updates, run_due_watch_checks
@@ -418,5 +420,20 @@ async def run_monitor_endpoint() -> MonitorRunResponse:
         checked=stats.checked,
         new_developments=stats.new_developments,
         notifications_created=stats.notifications_created,
+        failed=stats.failed,
+    )
+
+
+@app.post(
+    "/api/internal/notifications/deliver",
+    response_model=NotificationDeliveryResponse,
+    dependencies=[Depends(verify_monitor_secret)],
+)
+async def deliver_notifications_endpoint() -> NotificationDeliveryResponse:
+    stats = await deliver_pending_notifications()
+    return NotificationDeliveryResponse(
+        processed=stats.processed,
+        sent=stats.sent,
+        retry_scheduled=stats.retry_scheduled,
         failed=stats.failed,
     )
