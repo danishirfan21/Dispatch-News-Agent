@@ -1,80 +1,32 @@
-# -------------------------
-# Dependencies
-# -------------------------
-node_modules/
-
-# -------------------------
-# Build output
-# -------------------------
-dist/
-build/
-coverage/
-
-# -------------------------
-# Environment / secrets
-# -------------------------
-.env
-.env.*
-!.env.example
-
-# -------------------------
-# Vite
-# -------------------------
-*.local
-
-# -------------------------
 # Logs
-# -------------------------
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# -------------------------
-# Python / FastAPI
-# -------------------------
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
+node_modules
+dist
+dist-ssr
+*.local
 
-.venv/
-venv/
-env/
+# Environment / secrets
+.env
+.env.*
+!.env.example
 
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# -------------------------
-# IDE / editor
-# -------------------------
-.vscode/
-.idea/
-
-# Claude Code local settings
-.claude/settings.local.json
-
-# -------------------------
-# OS files
-# -------------------------
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# -------------------------
-# Local design references
-# -------------------------
+# Local design references (not part of the shipped app)
 design-reference/
 
-# -------------------------
-# Temporary files
-# -------------------------
-tmp/
-temp/
-*.tmp
-*.swp
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

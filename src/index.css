@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, serif;
+
+  --color-background: #faf9f7;
+  --color-surface: #faf9f7;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f4f3f1;
+  --color-surface-container: #efeeec;
+  --color-surface-container-high: #e9e8e6;
+  --color-on-surface: #1a1c1b;
+  --color-on-surface-variant: #45474b;
+  --color-outline: #76777b;
+  --color-outline-variant: #c6c6cb;
+
+  --color-primary: #000000;
+  --color-primary-container: #191c21;
+  --color-on-primary: #ffffff;
+
+  --color-secondary: #994700;
+  --color-secondary-fixed: #ffdbc8;
+  --color-on-secondary-fixed: #321300;
+
+  --radius-DEFAULT: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full-card: 0.75rem;
+
+  /*
+   * Deliberately not named xs/sm/md/lg/xl: those keys are part of Tailwind's
+   * shared spacing scale, also consumed by max-w-*, w-*, gap-*, etc. Reusing
+   * them here would silently change those utilities too. Page-gutter sizes
+   * use these unique names instead; everyday padding/margin/gap use
+   * Tailwind's built-in numeric spacing scale.
+   */
+  --spacing-gutter-mobile: 1rem;
+  --spacing-margin-mobile: 1.25rem;
+  --spacing-margin-tablet: 2rem;
+  --spacing-margin: 3.5rem;
+
+  --text-display: 3.5rem;
+  --text-display--line-height: 4rem;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-display-mobile: 2.25rem;
+  --text-display-mobile--line-height: 2.75rem;
+  --text-display-mobile--letter-spacing: -0.015em;
+
+  --text-headline-md: 1.75rem;
+  --text-headline-md--line-height: 2.25rem;
+  --text-headline-md--letter-spacing: -0.01em;
+
+  --text-headline-sm: 1.375rem;
+  --text-headline-sm--line-height: 1.75rem;
+
+  --text-body-lg: 1.1875rem;
+  --text-body-lg--line-height: 1.875rem;
+
+  --text-body-md: 1.0625rem;
+  --text-body-md--line-height: 1.65rem;
+
+  --text-label-lg: 0.8125rem;
+  --text-label-lg--line-height: 1.125rem;
+  --text-label-lg--letter-spacing: 0.06em;
+
+  --text-label-md: 0.75rem;
+  --text-label-md--line-height: 1rem;
+  --text-label-md--letter-spacing: 0.04em;
+
+  --text-label-sm: 0.6875rem;
+  --text-label-sm--line-height: 0.875rem;
+  --text-label-sm--letter-spacing: 0.08em;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overscroll-behavior: none;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-sans);
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
