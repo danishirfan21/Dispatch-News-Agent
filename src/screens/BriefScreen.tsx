@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { NewsStory } from '../components/NewsStory'
+import { listWatches } from '../api/watches'
 import { mockBriefStories, type BriefStory } from '../data/mockBrief'
 import { useBriefNarration } from '../hooks/useBriefNarration'
 
@@ -24,6 +26,16 @@ export function BriefScreen({ stories }: BriefScreenProps) {
     toggle,
     containerRef,
   } = useBriefNarration()
+
+  const [watchedStoryIds, setWatchedStoryIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    listWatches()
+      .then((watches) => setWatchedStoryIds(new Set(watches.map((watch) => watch.story_id))))
+      .catch(() => {
+        // Not fatal: the Follow button simply starts unfollowed if this fails.
+      })
+  }, [])
 
   return (
     <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
@@ -65,6 +77,7 @@ export function BriefScreen({ stories }: BriefScreenProps) {
               story={story}
               segments={segments.filter((segment) => segment.story_id === story.id)}
               activeSegment={activeSegment}
+              initiallyFollowing={watchedStoryIds.has(story.id)}
             />
           ))}
         </div>

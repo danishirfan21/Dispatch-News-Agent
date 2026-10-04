@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createWatch, WatchError } from '../api/watches'
 import type { BriefAudioSegment } from '../api/briefAudio'
 import type { BriefStory } from '../data/mockBrief'
 import { formatRelativeTime } from '../utils/relativeTime'
@@ -8,10 +9,32 @@ type NewsStoryProps = {
   story: BriefStory
   segments?: BriefAudioSegment[]
   activeSegment?: BriefAudioSegment | null
+  initiallyFollowing?: boolean
 }
 
-export function NewsStory({ story, segments, activeSegment }: NewsStoryProps) {
-  const [isFollowing, setIsFollowing] = useState(false)
+export function NewsStory({ story, segments, activeSegment, initiallyFollowing }: NewsStoryProps) {
+  const [isFollowing, setIsFollowing] = useState(Boolean(initiallyFollowing))
+  const [isSaving, setIsSaving] = useState(false)
+  const [followError, setFollowError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (initiallyFollowing) setIsFollowing(true)
+  }, [initiallyFollowing])
+
+  async function handleFollowClick() {
+    if (isFollowing || isSaving) return
+
+    setIsSaving(true)
+    setFollowError(null)
+    try {
+      await createWatch(story.id)
+      setIsFollowing(true)
+    } catch (error) {
+      setFollowError(error instanceof WatchError ? error.message : "Couldn't follow that story. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const isCurrentStory = activeSegment?.story_id === story.id
   const headlineSegment = segments?.find((segment) => segment.type === 'headline')
@@ -82,19 +105,27 @@ export function NewsStory({ story, segments, activeSegment }: NewsStoryProps) {
             </span>
           ))}
         </span>
-        <button
-          type="button"
-          onClick={() => setIsFollowing((prev) => !prev)}
-          aria-pressed={isFollowing}
-          className={
-            isFollowing
-              ? 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md font-semibold bg-secondary text-on-primary transition-colors'
-              : 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-secondary transition-colors'
-          }
-        >
-          <BookmarkIcon filled={isFollowing} />
-          {isFollowing ? 'Following' : 'Follow story'}
-        </button>
+        <div className="flex items-center gap-2">
+          {followError && (
+            <span role="alert" className="font-sans text-label-sm text-secondary">
+              {followError}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleFollowClick}
+            disabled={isSaving || isFollowing}
+            aria-pressed={isFollowing}
+            className={
+              isFollowing
+                ? 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md font-semibold bg-secondary text-on-primary transition-colors disabled:cursor-default'
+                : 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
+            }
+          >
+            <BookmarkIcon filled={isFollowing} />
+            {isFollowing ? 'Following' : isSaving ? 'Following…' : 'Follow story'}
+          </button>
+        </div>
       </div>
     </article>
   )

@@ -122,3 +122,34 @@ class BriefAudioResponse(BaseModel):
     audio_base64: str
     mime_type: str
     segments: list[BriefAudioSegment]
+
+
+WatchStatus = Literal["active", "paused"]
+
+
+class WatchCreateRequest(BaseModel):
+    story_id: str
+
+
+class WatchPatchRequest(BaseModel):
+    watch_condition: str | None = None
+    major_developments_only: bool | None = None
+    status: WatchStatus | None = None
+
+
+class WatchResponse(BaseModel):
+    id: str
+    story_id: str
+    topic: str
+    headline: str
+    summary: str
+    sources: list[BriefSource]
+    published_at: str | None = None
+    known_state: str
+    watch_condition: str
+    major_developments_only: bool
+    status: WatchStatus
+    latest_change: str | None = None
+    last_checked_at: str | None = None
+    created_at: str
+    updated_at: str

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo.errors import DuplicateKeyError
@@ -21,6 +23,9 @@ from .models import (
     RegisterRequest,
     UserPublic,
     VoiceTranscribeResponse,
+    WatchCreateRequest,
+    WatchPatchRequest,
+    WatchResponse,
 )
 from .security import create_access_token, hash_password, normalize_email, verify_password
 from .services.backboard import BackboardError, parse_interests
@@ -35,7 +40,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type"],
 )
 
@@ -214,3 +219,91 @@ async def brief_audio_endpoint(user: AuthenticatedUser = Depends(get_current_use
     )
 
     return BriefAudioResponse(audio_base64=tts_result["audio_base64"], mime_type="audio/mpeg", segments=segments)
+
+
+def _as_utc_isoformat(value: datetime) -> str:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.isoformat()
+
+
+def _to_watch_response(doc: dict) -> WatchResponse:
+    return WatchResponse(
+        id=str(doc["_id"]),
+        story_id=doc["story_id"],
+        topic=doc["topic"],
+        headline=doc["headline"],
+        summary=doc["summary"],
+        sources=doc["sources"],
+        published_at=doc.get("published_at"),
+        known_state=doc["known_state"],
+        watch_condition=doc["watch_condition"],
+        major_developments_only=doc["major_developments_only"],
+        status=doc["status"],
+        latest_change=doc.get("latest_change"),
+        last_checked_at=_as_utc_isoformat(doc["last_checked_at"]) if doc.get("last_checked_at") else None,
+        created_at=_as_utc_isoformat(doc["created_at"]),
+        updated_at=_as_utc_isoformat(doc["updated_at"]),
+    )
+
+
+@app.post("/api/watches", response_model=WatchResponse)
+async def create_watch_endpoint(
+    request: WatchCreateRequest, user: AuthenticatedUser = Depends(get_current_user)
+) -> WatchResponse:
+    existing = await repositories.find_watch_by_story(user.id, request.story_id)
+    if existing:
+        return _to_watch_response(existing)
+
+    story = await repositories.find_story_in_latest_brief(user.id, request.story_id)
+    if not story:
+        raise HTTPException(status_code=404, detail="That story isn't in your saved brief.")
+
+    try:
+        watch_doc = await repositories.create_watch(user.id, story)
+    except DuplicateKeyError:
+        existing = await repositories.find_watch_by_story(user.id, request.story_id)
+        if not existing:
+            raise
+        return _to_watch_response(existing)
+
+    return _to_watch_response(watch_doc)
+
+
+@app.get("/api/watches", response_model=list[WatchResponse])
+async def list_watches_endpoint(user: AuthenticatedUser = Depends(get_current_user)) -> list[WatchResponse]:
+    watch_docs = await repositories.list_watches(user.id)
+    return [_to_watch_response(doc) for doc in watch_docs]
+
+
+@app.get("/api/watches/{watch_id}", response_model=WatchResponse)
+async def get_watch_endpoint(
+    watch_id: str, user: AuthenticatedUser = Depends(get_current_user)
+) -> WatchResponse:
+    watch_doc = await repositories.get_watch(user.id, watch_id)
+    if not watch_doc:
+        raise HTTPException(status_code=404, detail="Watch not found.")
+    return _to_watch_response(watch_doc)
+
+
+@app.patch("/api/watches/{watch_id}", response_model=WatchResponse)
+async def patch_watch_endpoint(
+    watch_id: str, request: WatchPatchRequest, user: AuthenticatedUser = Depends(get_current_user)
+) -> WatchResponse:
+    updates = request.model_dump(exclude_unset=True)
+    if not updates:
+        watch_doc = await repositories.get_watch(user.id, watch_id)
+    else:
+        watch_doc = await repositories.update_watch(user.id, watch_id, updates)
+
+    if not watch_doc:
+        raise HTTPException(status_code=404, detail="Watch not found.")
+    return _to_watch_response(watch_doc)
+
+
+@app.delete("/api/watches/{watch_id}")
+async def delete_watch_endpoint(watch_id: str, user: AuthenticatedUser = Depends(get_current_user)) -> dict:
+    deleted = await repositories.delete_watch(user.id, watch_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Watch not found.")
+    return {"ok": True}

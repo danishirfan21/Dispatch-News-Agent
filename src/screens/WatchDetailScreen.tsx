@@ -1,21 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { mockWatchedStories } from '../data/mockWatches'
+import { getWatch, patchWatch, WatchError, type Watch } from '../api/watches'
 import { formatRelativeTime, minutesSince } from '../utils/relativeTime'
 
 export function WatchDetailScreen() {
   const { id } = useParams()
-  const story = mockWatchedStories.find((item) => item.id === id)
 
-  // Hooks must run unconditionally, so they're declared before the
-  // not-found check below and simply go unused when story is missing.
-  const [watchCondition, setWatchCondition] = useState(story?.watchCondition ?? '')
-  const [majorDevelopmentsOnly, setMajorDevelopmentsOnly] = useState(
-    story?.majorDevelopmentsOnly ?? false,
-  )
-  const [isPaused, setIsPaused] = useState(false)
+  const [watch, setWatch] = useState<Watch | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const [watchCondition, setWatchCondition] = useState('')
+  const [majorDevelopmentsOnly, setMajorDevelopmentsOnly] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showSavedToast, setShowSavedToast] = useState(false)
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    if (!id) {
+      setIsLoading(false)
+      return
+    }
+
+    getWatch(id)
+      .then((result) => {
+        setWatch(result)
+        if (result) {
+          setWatchCondition(result.watch_condition)
+          setMajorDevelopmentsOnly(result.major_developments_only)
+        }
+      })
+      .catch((error) => setLoadError(error instanceof WatchError ? error.message : "Couldn't load that watch."))
+      .finally(() => setIsLoading(false))
+  }, [id])
 
   useEffect(() => {
     return () => {
@@ -23,12 +42,16 @@ export function WatchDetailScreen() {
     }
   }, [])
 
-  if (!story) {
+  if (isLoading) {
+    return <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]" />
+  }
+
+  if (loadError || !watch) {
     return (
       <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
         <div className="max-w-3xl mx-auto px-margin-mobile md:px-margin-tablet py-12 text-center">
           <h1 className="font-serif text-display-mobile md:text-display text-on-surface tracking-tight mb-4">
-            Story not found
+            {loadError ?? 'Story not found'}
           </h1>
           <Link
             to="/watching"
@@ -41,12 +64,42 @@ export function WatchDetailScreen() {
     )
   }
 
-  const relativeUpdatedAt = formatRelativeTime(minutesSince(story.updatedAt))
+  const isPaused = watch.status === 'paused'
+  const relativeUpdatedAt = formatRelativeTime(minutesSince(watch.updated_at))
+  const relativeCheckedAt = watch.last_checked_at
+    ? formatRelativeTime(minutesSince(watch.last_checked_at))
+    : relativeUpdatedAt
 
-  function handleSaveCriteria() {
-    setShowSavedToast(true)
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    toastTimeoutRef.current = setTimeout(() => setShowSavedToast(false), 3500)
+  async function handleSaveCriteria() {
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      const updated = await patchWatch(watch!.id, {
+        watch_condition: watchCondition,
+        major_developments_only: majorDevelopmentsOnly,
+      })
+      setWatch(updated)
+      setShowSavedToast(true)
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = setTimeout(() => setShowSavedToast(false), 3500)
+    } catch (error) {
+      setSaveError(error instanceof WatchError ? error.message : "Couldn't save your changes.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleToggleStatus() {
+    setIsTogglingStatus(true)
+    setSaveError(null)
+    try {
+      const updated = await patchWatch(watch!.id, { status: isPaused ? 'active' : 'paused' })
+      setWatch(updated)
+    } catch (error) {
+      setSaveError(error instanceof WatchError ? error.message : "Couldn't update this watch.")
+    } finally {
+      setIsTogglingStatus(false)
+    }
   }
 
   return (
@@ -71,20 +124,20 @@ export function WatchDetailScreen() {
           <header className="space-y-4">
             <div className="flex items-center gap-1 flex-wrap">
               <span className="font-sans text-label-sm uppercase tracking-widest text-on-surface-variant">
-                {story.category}
+                {watch.topic}
               </span>
               <span className="font-sans text-label-sm text-on-surface-variant">&bull;</span>
               <span className="font-sans text-label-sm uppercase tracking-widest text-secondary font-semibold">
-                Watching
+                {isPaused ? 'Paused' : 'Watching'}
               </span>
             </div>
             <h1 className="font-serif text-headline-lg text-on-surface tracking-tight leading-tight">
-              {story.title}
+              {watch.headline}
             </h1>
             <div className="inline-flex items-center gap-1 bg-surface-container-low px-4 py-1 rounded-full">
               <span className="w-2 h-2 rounded-full bg-secondary" aria-hidden="true" />
               <span className="font-sans text-label-md text-on-surface font-medium">
-                {isPaused ? 'Paused' : 'Watching'} &bull; Last checked {relativeUpdatedAt}
+                {isPaused ? 'Paused' : 'Watching'} &bull; Last checked {relativeCheckedAt}
               </span>
             </div>
           </header>
@@ -94,17 +147,18 @@ export function WatchDetailScreen() {
               <span className="font-sans text-label-sm text-secondary font-semibold uppercase tracking-wider">
                 The Latest Meaningful Change
               </span>
-              <h2 className="font-serif text-headline-sm text-on-surface">
-                {story.latestMeaningfulChange.heading}
-              </h2>
+              {watch.latest_change ? (
+                <p className="font-serif text-body-md text-on-surface">{watch.latest_change}</p>
+              ) : (
+                <h2 className="font-serif text-headline-sm text-on-surface">
+                  No meaningful change yet
+                </h2>
+              )}
             </div>
-            <p className="font-serif text-body-md text-on-surface">
-              {story.latestMeaningfulChange.detail}
-            </p>
             <div className="bg-surface-container-low rounded-lg p-4 border-l-2 border-secondary">
               <p className="font-sans text-body-sm text-on-surface">
                 <span className="font-semibold text-secondary">Current Status: </span>
-                {story.currentStatus}
+                {watch.latest_change ?? "We're watching, and haven't seen a meaningful development yet."}
               </p>
             </div>
           </section>
@@ -118,7 +172,7 @@ export function WatchDetailScreen() {
                 No redundant alerts
               </span>
             </div>
-            <p className="font-sans text-body-sm text-on-surface">{story.knownContext}</p>
+            <p className="font-sans text-body-sm text-on-surface">{watch.known_state}</p>
             <div className="pt-1">
               <p className="font-sans text-label-sm text-on-surface-variant italic">
                 We won't alert you unless something meaningfully changes.
@@ -164,7 +218,7 @@ export function WatchDetailScreen() {
             <div className="pt-4 border-t border-surface-container space-y-1">
               <div className="flex flex-wrap items-center justify-between gap-2 text-on-surface-variant">
                 <span className="font-sans text-label-sm">
-                  Monitored sources: {story.monitoredSources.join(', ')}
+                  Monitored sources: {watch.sources.map((source) => source.name).join(', ')}
                 </span>
                 <button
                   type="button"
@@ -177,21 +231,29 @@ export function WatchDetailScreen() {
               </div>
             </div>
 
+            {saveError && (
+              <p role="alert" className="font-sans text-label-sm text-secondary">
+                {saveError}
+              </p>
+            )}
+
             <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-surface-container">
               <button
                 type="button"
                 onClick={handleSaveCriteria}
-                className="px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-sans text-label-lg transition-colors flex items-center gap-1 shadow-sm"
+                disabled={isSaving}
+                className="px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-sans text-label-lg transition-colors flex items-center gap-1 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CheckIcon />
-                <span>Save criteria</span>
+                <span>{isSaving ? 'Saving…' : 'Save criteria'}</span>
               </button>
 
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setIsPaused((prev) => !prev)}
-                  className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors"
+                  onClick={handleToggleStatus}
+                  disabled={isTogglingStatus}
+                  className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isPaused ? 'Resume watching' : 'Pause watching'}
                 </button>

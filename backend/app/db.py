@@ -25,4 +25,5 @@ async def create_indexes() -> None:
     await db.users.create_index("email", unique=True)
     await db.profiles.create_index("user_id", unique=True)
     await db.briefs.create_index([("user_id", 1), ("generated_at", -1)])
+    await db.watches.create_index([("user_id", 1), ("story_id", 1)], unique=True)
     logger.info("Database indexes ensured")

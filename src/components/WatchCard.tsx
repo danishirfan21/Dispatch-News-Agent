@@ -1,16 +1,16 @@
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import type { WatchedStory } from '../data/mockWatches'
+import type { Watch } from '../api/watches'
 import { formatRelativeTime, minutesSince } from '../utils/relativeTime'
 
 type WatchCardProps = {
-  story: WatchedStory
+  watch: Watch
 }
 
-export function WatchCard({ story }: WatchCardProps) {
+export function WatchCard({ watch }: WatchCardProps) {
   const navigate = useNavigate()
-  const isNew = story.updateStatus === 'new-development'
-  const href = `/watching/${story.id}`
+  const hasNewDevelopment = Boolean(watch.latest_change)
+  const href = `/watching/${watch.id}`
 
   function goToDetail() {
     navigate(href)
@@ -31,12 +31,12 @@ export function WatchCard({ story }: WatchCardProps) {
     <article
       role="link"
       tabIndex={0}
-      aria-label={story.title}
+      aria-label={watch.headline}
       onClick={goToDetail}
       onKeyDown={handleKeyDown}
       className="group relative overflow-hidden bg-surface-container-lowest p-6 rounded-xl border border-surface-container hover:border-outline-variant transition-all cursor-pointer"
     >
-      {isNew && (
+      {hasNewDevelopment && (
         <span
           aria-hidden="true"
           className="absolute left-0 top-0 bottom-0 w-1 bg-secondary"
@@ -47,26 +47,34 @@ export function WatchCard({ story }: WatchCardProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={`font-sans text-label-sm uppercase tracking-wider font-semibold ${
-              isNew ? 'text-secondary' : 'text-on-surface-variant'
+              hasNewDevelopment ? 'text-secondary' : 'text-on-surface-variant'
             }`}
           >
-            {story.category}
+            {watch.topic}
           </span>
           <span className="text-outline-variant" aria-hidden="true">
             &bull;
           </span>
           <span
             className={`font-sans text-label-sm ${
-              isNew ? 'text-secondary font-medium' : 'text-on-surface-variant'
+              hasNewDevelopment ? 'text-secondary font-medium' : 'text-on-surface-variant'
             }`}
           >
-            Updated {formatRelativeTime(minutesSince(story.updatedAt))}
+            Updated {formatRelativeTime(minutesSince(watch.updated_at))}
           </span>
+          {watch.status === 'paused' && (
+            <>
+              <span className="text-outline-variant" aria-hidden="true">
+                &bull;
+              </span>
+              <span className="font-sans text-label-sm text-on-surface-variant">Paused</span>
+            </>
+          )}
         </div>
 
         <div
           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-sans text-label-sm uppercase tracking-wide ${
-            isNew
+            hasNewDevelopment
               ? 'bg-secondary-fixed text-on-secondary-fixed font-semibold'
               : 'bg-surface-container text-on-surface-variant'
           }`}
@@ -74,18 +82,18 @@ export function WatchCard({ story }: WatchCardProps) {
           <span
             aria-hidden="true"
             className={`w-1.5 h-1.5 rounded-full ${
-              isNew ? 'bg-secondary animate-ping' : 'bg-outline-variant'
+              hasNewDevelopment ? 'bg-secondary animate-ping' : 'bg-outline-variant'
             }`}
           />
-          <span>{isNew ? 'New development' : 'No meaningful change'}</span>
+          <span>{hasNewDevelopment ? 'New development' : 'No meaningful change'}</span>
         </div>
       </div>
 
       <h2 className="font-serif text-headline-md text-on-surface tracking-tight mb-2 group-hover:text-primary transition-colors">
-        {story.title}
+        {watch.headline}
       </h2>
       <p className="font-serif text-body-md text-on-surface-variant leading-relaxed mb-4">
-        {story.currentStatus}
+        {watch.latest_change ?? watch.summary}
       </p>
 
       <div className="flex items-center justify-end">
@@ -93,7 +101,7 @@ export function WatchCard({ story }: WatchCardProps) {
           to={href}
           onClick={handleViewClick}
           className={`inline-flex items-center gap-1 font-sans text-label-md transition-all group-hover:translate-x-0.5 ${
-            isNew
+            hasNewDevelopment
               ? 'text-secondary font-semibold hover:opacity-80'
               : 'text-on-surface hover:text-secondary'
           }`}

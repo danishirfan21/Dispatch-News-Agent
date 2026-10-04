@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 
+from bson import ObjectId
+from bson.errors import InvalidId
+
 from .db import get_db
 from .models import BriefStory, ProfilePutRequest
 
@@ -60,3 +63,82 @@ async def get_latest_brief(user_id: str) -> dict | None:
         {"user_id": user_id},
         sort=[("generated_at", -1)],
     )
+
+
+async def find_story_in_latest_brief(user_id: str, story_id: str) -> dict | None:
+    brief_doc = await get_latest_brief(user_id)
+    if not brief_doc:
+        return None
+    for story in brief_doc["stories"]:
+        if story["id"] == story_id:
+            return story
+    return None
+
+
+async def find_watch_by_story(user_id: str, story_id: str) -> dict | None:
+    return await get_db().watches.find_one({"user_id": user_id, "story_id": story_id})
+
+
+async def create_watch(user_id: str, story: dict) -> dict:
+    now = datetime.now(timezone.utc)
+    doc = {
+        "user_id": user_id,
+        "story_id": story["id"],
+        "topic": story["topic"],
+        "headline": story["headline"],
+        "summary": story["summary"],
+        "sources": story["sources"],
+        "published_at": story.get("published_at"),
+        "known_state": story["summary"],
+        "watch_condition": "",
+        "major_developments_only": True,
+        "status": "active",
+        "latest_change": None,
+        "last_checked_at": None,
+        "created_at": now,
+        "updated_at": now,
+    }
+    result = await get_db().watches.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return doc
+
+
+async def list_watches(user_id: str) -> list[dict]:
+    cursor = get_db().watches.find({"user_id": user_id}).sort("created_at", -1)
+    return await cursor.to_list(length=None)
+
+
+def _to_object_id(watch_id: str) -> ObjectId | None:
+    try:
+        return ObjectId(watch_id)
+    except InvalidId:
+        return None
+
+
+async def get_watch(user_id: str, watch_id: str) -> dict | None:
+    object_id = _to_object_id(watch_id)
+    if not object_id:
+        return None
+    return await get_db().watches.find_one({"_id": object_id, "user_id": user_id})
+
+
+async def update_watch(user_id: str, watch_id: str, updates: dict) -> dict | None:
+    object_id = _to_object_id(watch_id)
+    if not object_id:
+        return None
+
+    updates = {**updates, "updated_at": datetime.now(timezone.utc)}
+    result = await get_db().watches.update_one(
+        {"_id": object_id, "user_id": user_id}, {"$set": updates}
+    )
+    if result.matched_count == 0:
+        return None
+    return await get_db().watches.find_one({"_id": object_id, "user_id": user_id})
+
+
+async def delete_watch(user_id: str, watch_id: str) -> bool:
+    object_id = _to_object_id(watch_id)
+    if not object_id:
+        return False
+    result = await get_db().watches.delete_one({"_id": object_id, "user_id": user_id})
+    return result.deleted_count > 0
