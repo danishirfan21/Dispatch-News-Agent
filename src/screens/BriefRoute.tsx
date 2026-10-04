@@ -1,21 +1,34 @@
 import { useLocation } from 'react-router-dom'
-import type { Article } from '../api/news'
+import type { BriefStoryResponse } from '../api/brief'
+import type { BriefStory } from '../data/mockBrief'
+import { minutesSince } from '../utils/relativeTime'
 import { BriefScreen } from './BriefScreen'
-import { RawNewsResults } from './RawNewsResults'
 
-type BriefLocationState = { articles?: Article[] } | null
+type BriefLocationState = { stories?: BriefStoryResponse[] } | null
+
+function toBriefStory(story: BriefStoryResponse): BriefStory {
+  return {
+    id: story.id,
+    category: story.topic,
+    minutesAgo: story.published_at ? minutesSince(story.published_at) : 0,
+    headline: story.headline,
+    summary: story.summary,
+    whyItMatters: story.why_this_matters_to_you,
+    sources: story.sources,
+  }
+}
 
 /**
- * Picks between the real (but temporary/unstyled) retrieved-news test view
- * and the existing polished mock Brief. Navigating here directly (no
- * articles in router state) keeps showing the mock Brief unchanged.
+ * Picks between the real curated brief and the existing polished mock Brief.
+ * Navigating here directly (no stories in router state) keeps showing the
+ * mock Brief unchanged.
  */
 export function BriefRoute() {
   const location = useLocation()
   const state = location.state as BriefLocationState
 
-  if (state?.articles) {
-    return <RawNewsResults articles={state.articles} />
+  if (state?.stories) {
+    return <BriefScreen stories={state.stories.map(toBriefStory)} />
   }
 
   return <BriefScreen />

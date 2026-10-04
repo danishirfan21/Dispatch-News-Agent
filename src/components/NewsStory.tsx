@@ -35,7 +35,23 @@ export function NewsStory({ story }: NewsStoryProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <span className="font-sans text-label-sm text-on-surface-variant">
-          {story.sources.join(' · ')}
+          {story.sources.map((source, index) => (
+            <span key={source.name}>
+              {index > 0 && ' · '}
+              {source.url ? (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-secondary underline-offset-2 hover:underline"
+                >
+                  {source.name}
+                </a>
+              ) : (
+                source.name
+              )}
+            </span>
+          ))}
         </span>
         <button
           type="button"

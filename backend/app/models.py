@@ -38,3 +38,32 @@ class Article(BaseModel):
 
 class NewsSearchResponse(BaseModel):
     articles: list[Article]
+
+
+class BriefGenerateRequest(BaseModel):
+    interest_profile: ParseInterestsResponse
+    articles: list[Article]
+
+
+class BriefSource(BaseModel):
+    name: str
+    url: str
+
+
+Importance = Literal["high", "medium", "low"]
+
+
+class BriefStory(BaseModel):
+    id: str
+    topic: str
+    headline: str
+    summary: str
+    why_this_matters_to_you: str
+    source_article_ids: list[str]
+    sources: list[BriefSource]
+    published_at: str | None = None
+    importance: Importance
+
+
+class BriefGenerateResponse(BaseModel):
+    stories: list[BriefStory]

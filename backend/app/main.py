@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .models import (
+    BriefGenerateRequest,
+    BriefGenerateResponse,
     NewsSearchRequest,
     NewsSearchResponse,
     ParseInterestsRequest,
     ParseInterestsResponse,
 )
 from .services.backboard import BackboardError, parse_interests
+from .services.brief import generate_brief
 from .services.serpapi import SerpApiError, search_news
 
 app = FastAPI(title="Dispatch API")
@@ -47,3 +50,22 @@ async def news_search_endpoint(request: NewsSearchRequest) -> NewsSearchResponse
         raise HTTPException(status_code=404, detail="No current news found for these interests.")
 
     return NewsSearchResponse(articles=articles)
+
+
+@app.post("/api/brief/generate", response_model=BriefGenerateResponse)
+async def brief_generate_endpoint(request: BriefGenerateRequest) -> BriefGenerateResponse:
+    if not request.articles:
+        raise HTTPException(status_code=400, detail="No articles to curate.")
+
+    try:
+        stories = await generate_brief(request.interest_profile, request.articles)
+    except BackboardError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    if not stories:
+        raise HTTPException(
+            status_code=404,
+            detail="Couldn't find any stories strongly related to your interests right now.",
+        )
+
+    return BriefGenerateResponse(stories=stories)

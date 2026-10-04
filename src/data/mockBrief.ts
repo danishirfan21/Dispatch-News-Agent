@@ -1,3 +1,8 @@
+export type BriefSource = {
+  name: string
+  url?: string
+}
+
 export type BriefStory = {
   id: string
   category: string
@@ -6,7 +11,7 @@ export type BriefStory = {
   headline: string
   summary: string
   whyItMatters: string
-  sources: string[]
+  sources: BriefSource[]
 }
 
 export const mockBriefStories: BriefStory[] = [
@@ -20,7 +25,12 @@ export const mockBriefStories: BriefStory[] = [
       "The International Monetary Fund enters final technical review of Pakistan's 37-month loan program. Key conditions around provincial tax harmonization and power tariff restructuring show early compliance, though external financing gaps of $2.1B remain under negotiation with bilateral lenders in Riyadh and Beijing.",
     whyItMatters:
       "You're seeing this because you follow Pakistan's economy and IMF negotiations. This development could materially affect Pakistan's financing outlook.",
-    sources: ['Financial Times', 'Dawn News', 'Bloomberg', 'Reuters'],
+    sources: [
+      { name: 'Financial Times' },
+      { name: 'Dawn News' },
+      { name: 'Bloomberg' },
+      { name: 'Reuters' },
+    ],
   },
   {
     id: 'openai-reasoning-benchmarks',
@@ -32,7 +42,11 @@ export const mockBriefStories: BriefStory[] = [
       'A new technical publication reveals self-correcting inference routines that substantially reduce error rates across advanced mathematical and competitive software benchmarks, signalling a pivotal industry pivot from pure pre-training scale toward runtime computation.',
     whyItMatters:
       "You're seeing this because you track AI research and frontier foundation models. These reasoning benchmarks indicate a paradigm shift in autonomous problem-solving.",
-    sources: ['arXiv Preprint', 'Nature Machine Intelligence', 'MIT Tech Review'],
+    sources: [
+      { name: 'arXiv Preprint' },
+      { name: 'Nature Machine Intelligence' },
+      { name: 'MIT Tech Review' },
+    ],
   },
   {
     id: 'semiconductor-export-controls',
@@ -44,7 +58,11 @@ export const mockBriefStories: BriefStory[] = [
       'New administrative directives extend international restrictions to cutting-edge transistor tooling and high-bandwidth memory packaging equipment, prompting coordinated policy discussions with allied equipment manufacturers in Tokyo and The Hague.',
     whyItMatters:
       "You're seeing this because you follow US-China relations and semiconductor policy. New export restrictions will immediately impact supply chain equipment flows.",
-    sources: ['Wall Street Journal', 'South China Morning Post', 'Nikkei Asia'],
+    sources: [
+      { name: 'Wall Street Journal' },
+      { name: 'South China Morning Post' },
+      { name: 'Nikkei Asia' },
+    ],
   },
   {
     id: 'narrowbody-airworthiness-directive',
@@ -56,7 +74,11 @@ export const mockBriefStories: BriefStory[] = [
       'Federal safety regulators have instructed operators to carry out immediate borescope inspections across 410 narrowbody passenger aircraft after investigators identified potential thermal binding in dual-servo valve actuators during cold-weather descents.',
     whyItMatters:
       'You\'re seeing this because you monitor major aviation safety directives. The emergency inspections directly impact commercial narrowbody fleet scheduling.',
-    sources: ['FlightGlobal', 'Aviation Week', 'Reuters Aerospace'],
+    sources: [
+      { name: 'FlightGlobal' },
+      { name: 'Aviation Week' },
+      { name: 'Reuters Aerospace' },
+    ],
   },
   {
     id: 'ufc-light-heavyweight-title',
@@ -68,6 +90,6 @@ export const mockBriefStories: BriefStory[] = [
       'Promotion executives have concluded contract terms in Las Vegas following requisite medical clearances, establishing a marquee headline clash of stylistic specialists scheduled for the autumn pay-per-view slate in Sydney.',
     whyItMatters:
       "You're seeing this because you track UFC championship bouts. The title fight rescheduling alters the division's title timeline.",
-    sources: ['MMA Fighting', 'ESPN MMA'],
+    sources: [{ name: 'MMA Fighting' }, { name: 'ESPN MMA' }],
   },
 ]

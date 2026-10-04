@@ -8,7 +8,7 @@ from ..models import ParseInterestsResponse
 
 logger = logging.getLogger("backboard")
 
-SYSTEM_PROMPT = """You turn a short, casual description of someone's news interests into a \
+INTEREST_PARSE_SYSTEM_PROMPT = """You turn a short, casual description of someone's news interests into a \
 structured interest profile for a personalized news app.
 
 Rules:
@@ -41,14 +41,18 @@ class BackboardError(Exception):
     """Raised for any Backboard-related failure. Message is safe to show the user."""
 
 
-async def parse_interests(text: str) -> ParseInterestsResponse:
+async def send_json_message(system_prompt: str, content: str) -> dict:
+    """Send one message to the configured Backboard model and parse its reply
+    as JSON. Shared by every feature that needs structured output from the
+    model, so there is a single place that holds the model/provider config,
+    the request shape, and the error handling."""
     if not settings.backboard_api_key:
         logger.error("Backboard request skipped: API key is not configured")
         raise BackboardError("The AI service isn't configured on the server yet.")
 
     payload = {
-        "content": text,
-        "system_prompt": SYSTEM_PROMPT,
+        "content": content,
+        "system_prompt": system_prompt,
         "llm_provider": settings.backboard_llm_provider,
         "model_name": settings.backboard_model,
         "memory": "off",
@@ -58,7 +62,10 @@ async def parse_interests(text: str) -> ParseInterestsResponse:
     headers = {"X-API-Key": settings.backboard_api_key}
 
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        # The interest-parsing call usually finishes in ~10-15s, but the brief
+        # curation call reasons over a whole article set and has been observed
+        # to take over two minutes.
+        async with httpx.AsyncClient(timeout=180.0) as client:
             response = await client.post(
                 f"{settings.backboard_base_url}/threads/messages",
                 json=payload,
@@ -77,19 +84,22 @@ async def parse_interests(text: str) -> ParseInterestsResponse:
 
     try:
         body = response.json()
-        content = body["content"]
-        if content is None:
+        message_content = body["content"]
+        if message_content is None:
             raise KeyError("content")
     except (KeyError, ValueError) as exc:
         logger.error("Backboard response had unexpected shape: %s", type(exc).__name__)
         raise BackboardError("The AI service sent back something we couldn't read.") from exc
 
     try:
-        parsed = json.loads(content)
+        return json.loads(message_content)
     except json.JSONDecodeError as exc:
         logger.error("Backboard content was not valid JSON: %s", type(exc).__name__)
         raise BackboardError("The AI service sent back something we couldn't read.") from exc
 
+
+async def parse_interests(text: str) -> ParseInterestsResponse:
+    parsed = await send_json_message(INTEREST_PARSE_SYSTEM_PROMPT, text)
     try:
         return ParseInterestsResponse.model_validate(parsed)
     except Exception as exc:

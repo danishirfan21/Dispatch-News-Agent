@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BriefGenerateError, generateBrief } from '../api/brief'
 import { InterestParseError, parseInterests, type InterestProfile } from '../api/interests'
 import { NewsSearchError, searchNews } from '../api/news'
 
@@ -10,7 +11,7 @@ export function SetupScreen() {
   const [interests, setInterests] = useState('')
   const [profile, setProfile] = useState<InterestProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isFetchingNews, setIsFetchingNews] = useState(false)
+  const [isBuildingBrief, setIsBuildingBrief] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -41,15 +42,20 @@ export function SetupScreen() {
   async function handleConfirm() {
     if (!profile) return
 
-    setIsFetchingNews(true)
+    setIsBuildingBrief(true)
     setError(null)
     try {
       const { articles } = await searchNews(profile)
-      navigate('/brief', { state: { articles } })
+      const { stories } = await generateBrief(profile, articles)
+      navigate('/brief', { state: { stories } })
     } catch (err) {
-      setError(err instanceof NewsSearchError ? err.message : 'Something went wrong. Please try again.')
+      if (err instanceof NewsSearchError || err instanceof BriefGenerateError) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     } finally {
-      setIsFetchingNews(false)
+      setIsBuildingBrief(false)
     }
   }
 
@@ -141,7 +147,7 @@ export function SetupScreen() {
                   <button
                     type="button"
                     onClick={handleEdit}
-                    disabled={isFetchingNews}
+                    disabled={isBuildingBrief}
                     className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     Edit
@@ -149,11 +155,11 @@ export function SetupScreen() {
                   <button
                     type="button"
                     onClick={handleConfirm}
-                    disabled={isFetchingNews}
+                    disabled={isBuildingBrief}
                     className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
-                      {isFetchingNews ? 'Finding news…' : 'Looks right → Continue'}
+                      {isBuildingBrief ? 'Building your brief…' : 'Looks right → Continue'}
                     </span>
                   </button>
                 </div>
