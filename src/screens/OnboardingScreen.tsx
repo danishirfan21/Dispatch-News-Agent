@@ -131,11 +131,24 @@ function formatPlaybackTime(seconds: number): string {
   return `${minutes}:${remainder.toString().padStart(2, '0')}`
 }
 
+type NarrationSentence = { text: string; start: number; end: number }
+
+const NARRATION_SENTENCES: NarrationSentence[] = [
+  { text: 'The company had previously said access would expand gradually.', start: 0, end: 3.959 },
+  { text: 'API access is now available to developers on paid accounts.', start: 4.47, end: 8.673 },
+  { text: 'Pricing and model limits were published alongside the release.', start: 9.114, end: 12.817 },
+]
+
 function AudioPreviewCard({ isActive }: { isActive: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+
+  const activeSentenceIndex =
+    isPlaying || currentTime > 0
+      ? NARRATION_SENTENCES.findIndex((sentence) => currentTime >= sentence.start && currentTime < sentence.end)
+      : -1
 
   useEffect(() => {
     if (isActive) return
@@ -196,11 +209,18 @@ function AudioPreviewCard({ isActive }: { isActive: boolean }) {
         </span>
       </div>
       <div className="space-y-3.5 font-serif text-lg sm:text-xl text-on-surface-variant leading-relaxed">
-        <p>The company had previously said access would expand gradually.</p>
-        <p className="bg-secondary-fixed/45 text-on-surface px-3 py-2 rounded-lg -mx-2.5">
-          API access is now available to developers on paid accounts.
-        </p>
-        <p>Pricing and model limits were published alongside the release.</p>
+        {NARRATION_SENTENCES.map((sentence, sentenceIndex) => (
+          <p
+            key={sentence.text}
+            className={
+              sentenceIndex === activeSentenceIndex
+                ? 'bg-secondary-fixed/45 text-on-surface px-3 py-2 rounded-lg -mx-2.5 transition-colors duration-200'
+                : 'transition-colors duration-200'
+            }
+          >
+            {sentence.text}
+          </p>
+        ))}
       </div>
     </div>
   )
