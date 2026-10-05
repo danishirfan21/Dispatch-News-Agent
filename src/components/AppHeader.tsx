@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useAutoHideHeader } from '../hooks/useAutoHideHeader'
@@ -18,11 +19,37 @@ export function AppHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
 
   async function handleLogout() {
+    setIsAccountMenuOpen(false)
     await logout()
     navigate('/login', { replace: true })
   }
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isAccountMenuOpen])
 
   return (
     <header
@@ -44,7 +71,7 @@ export function AppHeader() {
           </span>
         </span>
 
-        <nav className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl overflow-x-auto max-w-[70vw] sm:max-w-none">
+        <nav className="hidden md:flex items-center gap-1 bg-surface-container-low p-1 rounded-xl overflow-x-auto max-w-[70vw] sm:max-w-none">
           {NAV_ITEMS.map((item) => {
             const isActive =
               location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
@@ -69,10 +96,42 @@ export function AppHeader() {
         <button
           type="button"
           onClick={handleLogout}
-          className="px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
+          className="hidden md:block px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
         >
           Log out
         </button>
+
+        <div ref={accountMenuRef} className="relative md:hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={isAccountMenuOpen}
+            aria-label="Account menu"
+            className="flex items-center justify-center w-10 h-10 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
+              account_circle
+            </span>
+          </button>
+
+          {isAccountMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Account"
+              className="absolute right-0 top-full mt-2 w-40 bg-surface-container-lowest rounded-lg shadow-lg border border-surface-container py-1 z-50"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )
