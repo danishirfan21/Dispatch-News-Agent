@@ -19,12 +19,12 @@ const slides: Slide[] = [
       <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high">
         <div className="flex items-center justify-between mb-5">
           <span className="text-label-sm uppercase tracking-wider font-semibold text-secondary font-sans">
-            Your Brief
+            Example Brief
           </span>
           <span className="text-label-sm text-on-surface-variant font-sans">4 min read</span>
         </div>
         <h3 className="font-serif text-2xl sm:text-3xl font-normal text-on-surface leading-snug mb-3.5">
-          OpenAI releases a new reasoning model
+          New reasoning model opens API access
         </h3>
         <p className="font-sans text-sm sm:text-base text-on-surface-variant leading-relaxed mb-6">
           The new model improves coding and long-context reasoning, with API access beginning
@@ -38,7 +38,7 @@ const slides: Slide[] = [
             You follow frontier AI releases and developer tools.
           </p>
         </div>
-        <div className="text-label-sm text-on-surface-variant font-sans">OpenAI · TechCrunch</div>
+        <div className="text-label-sm text-on-surface-variant font-sans">Illustrative preview</div>
       </div>
     ),
   },
@@ -54,7 +54,7 @@ const slides: Slide[] = [
           </span>
         </div>
         <h3 className="font-serif text-2xl sm:text-3xl font-normal text-on-surface leading-snug mb-5">
-          OpenAI&apos;s next developer model
+          A new developer model
         </h3>
         <div className="bg-surface rounded-xl p-5 border border-surface-container-high mb-5">
           <div className="text-label-sm text-on-surface-variant mb-1.5 font-sans">Notify me when:</div>
