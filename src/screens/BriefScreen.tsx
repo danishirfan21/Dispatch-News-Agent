@@ -55,7 +55,7 @@ export function BriefScreen({ stories }: BriefScreenProps) {
             type="button"
             onClick={toggle}
             disabled={narrationState === 'loading'}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-surface-container-low text-on-surface font-sans text-label-md hover:bg-surface-container transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-surface-container-low text-on-surface font-sans text-label-md hover:bg-surface-container transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <SpeakerIcon />
             {LISTEN_LABELS[narrationState]}

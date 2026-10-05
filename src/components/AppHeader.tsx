@@ -61,7 +61,7 @@ export function AppHeader() {
         <button
           type="button"
           onClick={handleLogout}
-          className="px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
+          className="px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
         >
           Log out
         </button>

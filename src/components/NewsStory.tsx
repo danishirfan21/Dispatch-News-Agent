@@ -118,8 +118,8 @@ export function NewsStory({ story, segments, activeSegment, initiallyFollowing }
             aria-pressed={isFollowing}
             className={
               isFollowing
-                ? 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md font-semibold bg-secondary text-on-primary transition-colors disabled:cursor-default'
-                : 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
+                ? 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md font-semibold bg-secondary text-on-primary transition-colors cursor-pointer disabled:cursor-default'
+                : 'inline-flex items-center gap-1.5 px-4 py-1 rounded-lg font-sans text-label-md text-on-surface-variant hover:text-secondary transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'
             }
           >
             <BookmarkIcon filled={isFollowing} />

@@ -228,7 +228,7 @@ export function WatchDetailScreen() {
                 onClick={handleCheckForUpdates}
                 disabled={isChecking || isPaused}
                 title={isPaused ? 'Resume watching to check for updates' : undefined}
-                className="px-5 py-2 rounded-lg bg-surface-container-low text-on-surface hover:text-secondary font-sans text-label-md font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-5 py-2 rounded-lg bg-surface-container-low text-on-surface hover:text-secondary font-sans text-label-md font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isChecking
                   ? 'Checking…'
@@ -352,7 +352,7 @@ export function WatchDetailScreen() {
                 type="button"
                 onClick={handleSaveCriteria}
                 disabled={isSaving}
-                className="px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-sans text-label-lg transition-colors flex items-center gap-1 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-6 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-sans text-label-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CheckIcon />
                 <span>{isSaving ? 'Saving…' : 'Save criteria'}</span>
@@ -363,7 +363,7 @@ export function WatchDetailScreen() {
                   type="button"
                   onClick={handleToggleStatus}
                   disabled={isTogglingStatus}
-                  className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isPaused ? 'Resume watching' : 'Pause watching'}
                 </button>

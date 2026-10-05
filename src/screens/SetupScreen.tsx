@@ -120,7 +120,7 @@ export function SetupScreen() {
                   type="button"
                   onClick={toggleDictation}
                   disabled={dictationState === 'transcribing' || profile !== null}
-                  className={`group flex items-center gap-1 px-4 py-1 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`group flex items-center gap-1 px-4 py-1 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                     dictationState === 'recording'
                       ? 'bg-secondary text-on-primary'
                       : 'bg-surface-container-low text-on-surface'
@@ -186,7 +186,7 @@ export function SetupScreen() {
                     type="button"
                     onClick={handleEdit}
                     disabled={isBuildingBrief}
-                    className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-sans text-label-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     Edit
                   </button>
@@ -194,7 +194,7 @@ export function SetupScreen() {
                     type="button"
                     onClick={handleConfirm}
                     disabled={isBuildingBrief}
-                    className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
                       {isBuildingBrief ? 'Building your brief…' : 'Looks right → Continue'}
@@ -206,7 +206,7 @@ export function SetupScreen() {
                   type="button"
                   onClick={handleContinue}
                   disabled={isLoading}
-                  className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="group inline-flex items-center justify-center gap-4 px-10 py-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-all shadow-md hover:shadow-xl active:scale-[0.99] min-w-[280px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="font-sans text-label-lg uppercase tracking-wider text-on-primary">
                     {isLoading ? 'Thinking…' : 'Continue to Your Brief'}

@@ -32,7 +32,7 @@ function NoBriefEmptyState() {
         <button
           type="button"
           onClick={() => navigate('/setup')}
-          className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-sans text-label-md hover:bg-primary-container transition"
+          className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-sans text-label-md hover:bg-primary-container transition cursor-pointer"
         >
           Set up your interests
         </button>

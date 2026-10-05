@@ -83,7 +83,7 @@ export function RegisterScreen() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-sans text-label-lg uppercase tracking-wider transition-all shadow-md hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-sans text-label-lg uppercase tracking-wider transition-all shadow-md hover:shadow-xl cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating account…' : 'Create account'}
           </button>
