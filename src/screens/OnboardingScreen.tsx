@@ -135,7 +135,7 @@ function AudioPreviewCard() {
           aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
           aria-pressed={isPlaying}
           onClick={() => setIsPlaying((playing) => !playing)}
-          className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+          className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
         >
           <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
             {isPlaying ? 'pause' : 'play_arrow'}
@@ -232,7 +232,7 @@ export function OnboardingScreen() {
         <button
           type="button"
           onClick={finishOnboarding}
-          className="font-sans text-label-md text-on-surface-variant hover:text-on-surface transition-colors font-medium rounded min-h-11 px-3 flex items-center -mr-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          className="font-sans text-label-md text-on-surface-variant hover:text-on-surface transition-colors font-medium rounded min-h-11 px-3 flex items-center -mr-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         >
           Skip
         </button>
@@ -283,7 +283,7 @@ export function OnboardingScreen() {
               type="button"
               onClick={() => goToSlide(activeIndex - 1)}
               aria-label="Back to previous slide"
-              className="text-sm font-sans text-on-surface-variant hover:text-on-surface transition font-medium flex items-center gap-1 min-h-11 -ml-3 px-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+              className="text-sm font-sans text-on-surface-variant hover:text-on-surface transition font-medium flex items-center gap-1 min-h-11 -ml-3 px-3 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             >
               <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
                 west
@@ -304,7 +304,7 @@ export function OnboardingScreen() {
                 aria-label={`Go to slide ${dotIndex + 1} of ${TOTAL_SLIDES}`}
                 aria-selected={isActive}
                 onClick={() => goToSlide(dotIndex)}
-                className="min-h-11 min-w-11 flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                className="min-h-11 min-w-11 flex items-center justify-center rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
               >
                 <span
                   className={`block h-1.5 rounded-full transition-all duration-300 motion-reduce:transition-none motion-reduce:duration-0 ${
@@ -320,7 +320,7 @@ export function OnboardingScreen() {
           <button
             type="button"
             onClick={handleNext}
-            className="px-5 min-h-11 rounded-full bg-primary text-on-primary hover:bg-primary-container transition font-sans text-sm font-medium flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+            className="px-5 min-h-11 rounded-full bg-primary text-on-primary hover:bg-primary-container transition font-sans text-sm font-medium flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
             {isLastSlide ? (
               'Get started'
