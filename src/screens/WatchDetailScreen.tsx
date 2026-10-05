@@ -334,18 +334,10 @@ export function WatchDetailScreen() {
             </div>
 
             <div className="pt-4 border-t border-surface-container space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-on-surface-variant">
+              <div className="text-on-surface-variant">
                 <span className="font-sans text-label-sm">
                   Monitored sources: {watch.sources.map((source) => source.name).join(', ')}
                 </span>
-                <button
-                  type="button"
-                  disabled
-                  title="Coming soon"
-                  className="font-sans text-label-sm text-secondary opacity-50 cursor-not-allowed shrink-0"
-                >
-                  Inspect sources
-                </button>
               </div>
             </div>
 

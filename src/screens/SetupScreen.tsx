@@ -7,7 +7,7 @@ import { ProfileError, getProfile, putProfile } from '../api/profile'
 import { useVoiceDictation } from '../hooks/useVoiceDictation'
 
 const PLACEHOLDER_TEXT =
-  'e.g. AI frontier research, semiconductor geopolitics, macroeconomic risk. Exclude hype cycles and celebrity commentary.'
+  'e.g. New AI models and developer tools, major cybersecurity news, NVIDIA and semiconductor updates. Skip celebrity news and speculation.'
 
 export function SetupScreen() {
   const [interests, setInterests] = useState('')
@@ -98,8 +98,8 @@ export function SetupScreen() {
               What do you want to stay informed about?
             </h1>
             <p className="font-serif text-body-lg text-on-surface-variant max-w-[620px] mb-10 leading-relaxed">
-              Describe the topics and stories you care about in plain words. Your daily brief
-              will focus exclusively on what matters to you.
+              Describe the topics and stories you care about in plain words. Your Brief
+              will focus on the topics and developing stories that matter to you.
             </p>
 
             <div className="w-full bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container text-left mb-4">

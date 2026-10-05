@@ -14,31 +14,31 @@ const slides: Slide[] = [
   {
     title: 'Your news, without the noise.',
     description:
-      'Tell Dispatch what you care about in plain words. Receive a concise daily brief tailored exclusively to you.',
+      'Tell Dispatch what you care about in plain words. Receive a concise Brief tailored exclusively to you.',
     preview: (
       <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high">
         <div className="flex items-center justify-between mb-5">
           <span className="text-label-sm uppercase tracking-wider font-semibold text-secondary font-sans">
-            Morning Brief
+            Your Brief
           </span>
           <span className="text-label-sm text-on-surface-variant font-sans">4 min read</span>
         </div>
         <h3 className="font-serif text-2xl sm:text-3xl font-normal text-on-surface leading-snug mb-3.5">
-          Treasury Liquidity Expands Overnight Reserve Window
+          OpenAI releases a new reasoning model
         </h3>
         <p className="font-sans text-sm sm:text-base text-on-surface-variant leading-relaxed mb-6">
-          Short-duration yields stabilized early Thursday as interbank lending expanded under new
-          reserve adjustments. Key institutional desk volumes signaled initial relief.
+          The new model improves coding and long-context reasoning, with API access beginning
+          this week.
         </p>
         <div className="bg-surface rounded-xl p-5 border border-surface-container-high mb-5">
           <div className="text-label-sm uppercase tracking-wider font-semibold text-secondary mb-1.5 font-sans">
             Why this matters to you
           </div>
           <p className="font-sans text-sm sm:text-[15px] text-on-surface-variant leading-normal">
-            Directly impacts your focus on monetary policy and debt markets.
+            You follow frontier AI releases and developer tools.
           </p>
         </div>
-        <div className="text-label-sm text-on-surface-variant font-sans">Reuters · Financial Times</div>
+        <div className="text-label-sm text-on-surface-variant font-sans">OpenAI · TechCrunch</div>
       </div>
     ),
   },
@@ -54,12 +54,12 @@ const slides: Slide[] = [
           </span>
         </div>
         <h3 className="font-serif text-2xl sm:text-3xl font-normal text-on-surface leading-snug mb-5">
-          Pakistan &amp; IMF Extended Fund Facility
+          OpenAI&apos;s next developer model
         </h3>
         <div className="bg-surface rounded-xl p-5 border border-surface-container-high mb-5">
           <div className="text-label-sm text-on-surface-variant mb-1.5 font-sans">Notify me when:</div>
           <p className="font-serif text-lg sm:text-xl text-on-surface italic font-normal leading-snug">
-            &ldquo;This is officially confirmed by the Executive Board.&rdquo;
+            &ldquo;API access is publicly available.&rdquo;
           </p>
         </div>
         <div className="flex items-center justify-between text-label-sm text-on-surface-variant font-sans pt-1">
@@ -67,7 +67,7 @@ const slides: Slide[] = [
             <span className="material-symbols-outlined text-[16px] text-secondary" aria-hidden="true">
               radio_button_checked
             </span>
-            Actively watching 4 primary sources
+            Watching 4 trusted sources
           </span>
           <span>0 noise alerts</span>
         </div>
@@ -90,26 +90,26 @@ const slides: Slide[] = [
             </span>
           </div>
           <div className="font-sans text-sm sm:text-base text-on-surface-variant line-through">
-            Analysts debate potential timeline for board review
+            Reports repeat earlier model-release rumors.
           </div>
           <div className="text-xs text-on-surface-variant mt-1.5 font-sans">
-            Filtered out: duplicate commentary with no new data.
+            Filtered out: no new confirmed information.
           </div>
         </div>
         <div className="p-5 sm:p-6 rounded-xl bg-surface border border-secondary/20 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] uppercase tracking-wider text-secondary font-sans font-semibold">
-              Wire Update · Confirmed
+              Confirmed update
             </span>
             <span className="text-[11px] font-sans font-semibold text-secondary bg-secondary-fixed px-2.5 py-0.5 rounded-full">
               New development
             </span>
           </div>
           <div className="font-serif text-lg sm:text-xl text-on-surface font-normal leading-snug">
-            Executive board formally approves $7.0B disbursement.
+            API access officially opens to developers.
           </div>
           <div className="text-xs sm:text-sm text-on-surface-variant mt-2 font-sans">
-            First tranche of $1.1B scheduled for immediate release.
+            Pricing and availability have now been published.
           </div>
         </div>
       </div>
@@ -152,12 +152,11 @@ function AudioPreviewCard() {
         <span className="text-label-sm text-on-surface-variant font-sans tabular-nums">01:42</span>
       </div>
       <div className="space-y-3.5 font-serif text-lg sm:text-xl text-on-surface-variant leading-relaxed">
-        <p>European bond yields held steady through early morning trading sessions.</p>
+        <p>The company had previously said access would expand gradually.</p>
         <p className="bg-secondary-fixed/45 text-on-surface px-3 py-2 rounded-lg -mx-2.5">
-          The revised liquidity protocol accelerates bilateral customs clearance, insulating
-          maritime routes from near-term disruption.
+          API access is now available to developers on paid accounts.
         </p>
-        <p>Corroborated by trade representatives in Geneva.</p>
+        <p>Pricing and model limits were published alongside the release.</p>
       </div>
     </div>
   )
