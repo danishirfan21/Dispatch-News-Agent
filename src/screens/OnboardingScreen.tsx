@@ -7,7 +7,7 @@ import { resolvePostLoginRoute } from '../utils/postLoginRoute'
 type Slide = {
   title: string
   description: string
-  preview: ReactNode
+  preview: (isActive: boolean) => ReactNode
 }
 
 const slides: Slide[] = [
@@ -15,7 +15,7 @@ const slides: Slide[] = [
     title: 'Your news, without the noise.',
     description:
       'Tell Dispatch what you care about in plain words. Receive a concise Brief tailored exclusively to you.',
-    preview: (
+    preview: () => (
       <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high">
         <div className="flex items-center justify-between mb-5">
           <span className="text-label-sm uppercase tracking-wider font-semibold text-secondary font-sans">
@@ -45,7 +45,7 @@ const slides: Slide[] = [
   {
     title: 'Follow stories, not headlines.',
     description: 'Track developing stories and set precise conditions for when you want to be alerted.',
-    preview: (
+    preview: () => (
       <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-2 h-2 rounded-full bg-secondary" />
@@ -78,7 +78,7 @@ const slides: Slide[] = [
     title: 'Know when something actually changes.',
     description:
       'Dispatch checks new reporting against what you already know, filtering repetitive coverage so only genuine developments reach you.',
-    preview: (
+    preview: () => (
       <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high flex flex-col gap-4.5">
         <div className="p-4 sm:p-5 rounded-xl bg-surface-container-low border border-outline-variant">
           <div className="flex items-center justify-between mb-2">
@@ -118,23 +118,65 @@ const slides: Slide[] = [
   {
     title: 'Read it. Or listen.',
     description: 'Listen to your personalized Brief with synchronized text highlighting.',
-    preview: <AudioPreviewCard />,
+    preview: (isActive) => <AudioPreviewCard isActive={isActive} />,
   },
 ]
 
 const TOTAL_SLIDES = slides.length
 
-function AudioPreviewCard() {
+function formatPlaybackTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const minutes = Math.floor(seconds / 60)
+  const remainder = Math.floor(seconds % 60)
+  return `${minutes}:${remainder.toString().padStart(2, '0')}`
+}
+
+function AudioPreviewCard({ isActive }: { isActive: boolean }) {
+  const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  useEffect(() => {
+    if (isActive) return
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.currentTime = 0
+    }
+    setCurrentTime(0)
+  }, [isActive])
+
+  function togglePlayback() {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) {
+      void audio.play()
+    } else {
+      audio.pause()
+    }
+  }
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <div className="w-full max-w-2xl text-left bg-surface-container-lowest rounded-2xl p-7 sm:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-container-high">
+      <audio
+        ref={audioRef}
+        src="/audio/onboarding-preview.mp3"
+        preload="none"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+      />
       <div className="flex items-center gap-4 mb-6 pb-5 border-b border-surface-container-high">
         <button
           type="button"
           aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
           aria-pressed={isPlaying}
-          onClick={() => setIsPlaying((playing) => !playing)}
+          onClick={togglePlayback}
           className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
         >
           <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
@@ -146,10 +188,12 @@ function AudioPreviewCard() {
             Morning Audio Brief
           </div>
           <div className="w-full bg-surface-container-low rounded-full h-1.5 overflow-hidden">
-            <div className="bg-secondary h-full w-2/5 rounded-full" />
+            <div className="bg-secondary h-full rounded-full" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
-        <span className="text-label-sm text-on-surface-variant font-sans tabular-nums">01:42</span>
+        <span className="text-label-sm text-on-surface-variant font-sans tabular-nums">
+          {formatPlaybackTime(duration > 0 ? duration - currentTime : 0)}
+        </span>
       </div>
       <div className="space-y-3.5 font-serif text-lg sm:text-xl text-on-surface-variant leading-relaxed">
         <p>The company had previously said access would expand gradually.</p>
@@ -269,7 +313,7 @@ export function OnboardingScreen() {
                 <p className="font-sans text-base sm:text-lg text-on-surface-variant font-normal leading-relaxed mb-5 sm:mb-6 max-w-xl">
                   {slide.description}
                 </p>
-                {slide.preview}
+                {slide.preview(isActive)}
               </section>
             )
           })}
