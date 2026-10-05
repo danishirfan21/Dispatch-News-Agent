@@ -227,8 +227,8 @@ export function OnboardingScreen() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-surface flex flex-col justify-between">
-      <header className="w-full max-w-5xl mx-auto px-margin-mobile pt-7 sm:pt-8 flex items-center justify-end">
+    <div className="w-full h-dvh min-h-dvh overflow-y-auto bg-surface flex flex-col">
+      <header className="w-full max-w-5xl mx-auto px-margin-mobile pt-4 sm:pt-6 flex items-center justify-end shrink-0">
         <button
           type="button"
           onClick={finishOnboarding}
@@ -239,7 +239,7 @@ export function OnboardingScreen() {
       </header>
 
       <main
-        className="w-full max-w-4xl mx-auto px-margin-mobile py-6 sm:py-8 flex-1 flex flex-col justify-center"
+        className="w-full max-w-4xl mx-auto px-margin-mobile py-3 sm:py-5 flex-1 min-h-0 flex flex-col justify-center"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -263,10 +263,10 @@ export function OnboardingScreen() {
                     : 'absolute inset-0 top-0 opacity-0 translate-y-2.5 pointer-events-none'
                 }`}
               >
-                <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-on-surface mb-3 sm:mb-4">
+                <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-on-surface mb-2 sm:mb-3">
                   {slide.title}
                 </h1>
-                <p className="font-sans text-base sm:text-lg text-on-surface-variant font-normal leading-relaxed mb-8 sm:mb-10 max-w-xl">
+                <p className="font-sans text-base sm:text-lg text-on-surface-variant font-normal leading-relaxed mb-5 sm:mb-6 max-w-xl">
                   {slide.description}
                 </p>
                 {slide.preview}
@@ -276,7 +276,7 @@ export function OnboardingScreen() {
         </div>
       </main>
 
-      <footer className="w-full max-w-2xl mx-auto px-margin-mobile pb-8 sm:pb-12 pt-4 flex items-center justify-between">
+      <footer className="w-full max-w-2xl mx-auto px-margin-mobile pb-5 sm:pb-7 pt-3 flex items-center justify-between shrink-0">
         <div className="w-28 flex justify-start">
           {activeIndex > 0 && (
             <button
