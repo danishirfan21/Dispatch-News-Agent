@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export function RegisterScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const { register } = useAuth()
@@ -26,20 +27,26 @@ export function RegisterScreen() {
   }
 
   return (
-    <main className="w-full pt-20 bg-surface min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-[420px] px-margin-mobile">
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-display-mobile text-on-surface tracking-tight mb-2">
+    <main className="w-full pt-20 lg:pt-12 bg-surface min-h-screen flex items-center justify-center">
+      <div className="w-full max-w-[420px] lg:max-w-[460px] 2xl:max-w-[500px] px-margin-mobile">
+        <div className="text-center mb-8 lg:mb-10">
+          <img
+            src="/brand/dispatch-mark-bold.png"
+            alt=""
+            aria-hidden="true"
+            className="h-16 w-16 lg:h-[76px] lg:w-[76px] 2xl:h-[84px] 2xl:w-[84px] object-contain mx-auto mb-5 lg:mb-6"
+          />
+          <h1 className="font-serif text-display-mobile lg:text-[40px] 2xl:text-[44px] text-on-surface tracking-tight leading-tight mb-2 lg:mb-3">
             Create your account
           </h1>
-          <p className="font-serif text-body-md text-on-surface-variant">
+          <p className="font-serif text-body-md lg:text-[17px] 2xl:text-[19px] text-on-surface-variant">
             Set up Dispatch to follow what matters to you.
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container space-y-4"
+          className="bg-surface-container-lowest rounded-xl p-6 lg:p-7 2xl:p-8 shadow-sm border border-surface-container space-y-4"
         >
           <div>
             <label htmlFor="email" className="block font-sans text-label-sm text-on-surface-variant mb-1">
@@ -52,23 +59,35 @@ export function RegisterScreen() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full bg-surface-container-low rounded-lg px-4 py-3 font-sans text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full bg-surface-container-low rounded-lg px-4 py-3 lg:py-4 font-sans text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div>
             <label htmlFor="password" className="block font-sans text-label-sm text-on-surface-variant mb-1">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full bg-surface-container-low rounded-lg px-4 py-3 font-sans text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full bg-surface-container-low rounded-lg px-4 py-3 lg:py-4 pr-11 font-sans text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
             <p className="font-sans text-label-sm text-on-surface-variant mt-1">
               At least 8 characters.
             </p>
@@ -83,13 +102,13 @@ export function RegisterScreen() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-sans text-label-lg uppercase tracking-wider transition-all shadow-md hover:shadow-xl cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 lg:py-4 2xl:py-[18px] bg-primary hover:bg-primary-container text-on-primary rounded-lg font-sans text-label-lg uppercase tracking-wider transition-all shadow-md hover:shadow-xl cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <p className="text-center font-sans text-label-md text-on-surface-variant mt-6">
+        <p className="text-center font-sans text-label-md text-on-surface-variant mt-6 lg:mt-7">
           Already have an account?{' '}
           <Link to="/login" className="text-secondary font-semibold hover:underline">
             Sign in

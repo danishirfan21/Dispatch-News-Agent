@@ -32,8 +32,16 @@ export function AppHeader() {
       }`}
     >
       <div className="h-20 max-w-[1440px] mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin flex items-center justify-between gap-6">
-        <span className="font-serif text-headline-sm text-on-surface tracking-tight uppercase leading-none">
-          DISPATCH
+        <span className="flex items-center gap-2">
+          <img
+            src="/brand/dispatch-mark-primary.png"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5 object-contain shrink-0"
+          />
+          <span className="font-serif text-headline-sm text-on-surface tracking-tight uppercase leading-none">
+            DISPATCH
+          </span>
         </span>
 
         <nav className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl overflow-x-auto max-w-[70vw] sm:max-w-none">
