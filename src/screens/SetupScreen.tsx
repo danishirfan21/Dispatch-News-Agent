@@ -92,12 +92,12 @@ export function SetupScreen() {
   return (
     <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
       <div className="relative w-full overflow-hidden">
-        <div className="max-w-[840px] mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin py-10">
+        <div className="max-w-[840px] mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin pt-8 pb-16">
           <div className="flex flex-col items-center text-center">
             <h1 className="font-serif text-display-mobile md:text-display text-on-surface tracking-tight mb-2">
               What do you want to stay informed about?
             </h1>
-            <p className="font-serif text-body-lg text-on-surface-variant max-w-[620px] mb-10 leading-relaxed">
+            <p className="font-serif text-body-lg text-on-surface-variant max-w-[620px] mb-8 leading-relaxed">
               Describe the topics and stories you care about in plain words. Your Brief
               will focus on the topics and developing stories that matter to you.
             </p>
@@ -179,7 +179,7 @@ export function SetupScreen() {
               </div>
             )}
 
-            <div className="flex flex-col items-center gap-4 mb-10">
+            <div className="flex flex-col items-center gap-4 mb-6">
               {profile ? (
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <button
