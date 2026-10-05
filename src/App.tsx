@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { BriefRoute } from './screens/BriefRoute'
 import { LoginScreen } from './screens/LoginScreen'
+import { OnboardingScreen } from './screens/OnboardingScreen'
 import { RegisterScreen } from './screens/RegisterScreen'
 import { SetupScreen } from './screens/SetupScreen'
 import { WatchDetailScreen } from './screens/WatchDetailScreen'
@@ -11,6 +12,7 @@ import { WatchingScreen } from './screens/WatchingScreen'
 function App() {
   return (
     <Routes>
+      <Route path="/welcome" element={<OnboardingScreen />} />
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/register" element={<RegisterScreen />} />
 
