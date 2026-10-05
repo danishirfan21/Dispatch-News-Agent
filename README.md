@@ -1,7 +1,5 @@
 ![Dispatch](./public/brand/dispatch-lockup-primary.png)
 
-# Dispatch
-
 **Your news, without the noise.**
 A personalized AI news agent that builds concise briefs, follows developing stories, and alerts you only when something meaningfully changes.
 
